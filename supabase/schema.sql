@@ -1,0 +1,105 @@
+-- ============================================================
+--  Sprue portal — Supabase / Postgres schema
+--  Run this once in your Supabase project:
+--  Dashboard → SQL Editor → New query → paste → Run
+-- ============================================================
+
+-- Reference-number sequence (RFQ-YY-0001, RFQ-YY-0002, ...)
+create sequence if not exists request_seq start 1;
+
+create or replace function next_ref() returns text
+  language sql as $$
+    select 'RFQ-' || to_char(now(), 'YY') || '-' || lpad(nextval('request_seq')::text, 4, '0');
+$$;
+
+-- ------------------------------------------------------------
+--  Main table. Sub-collections (events/quotes) are jsonb so the
+--  app model maps 1:1; all mutations go through the atomic
+--  functions below (row-level append, no lost updates).
+-- ------------------------------------------------------------
+create table if not exists requests (
+  id             uuid primary key default gen_random_uuid(),
+  ref            text unique not null default next_ref(),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  client         jsonb not null default '{}'::jsonb,   -- {name,email,company,phone}
+  category       text,
+  category_label text,
+  title          text,
+  fields         jsonb not null default '{}'::jsonb,   -- questionnaire answers by field key
+  moulds         jsonb not null default '[]'::jsonb,   -- per-mould rows
+  description    text  default '',
+  attachments    jsonb not null default '[]'::jsonb,   -- [{id,name,size,type,path}]
+  "group"        text  default '',
+  priority       text  default 'Standard',
+  status         text  not null default 'submitted',
+  quotes         jsonb not null default '[]'::jsonb,   -- [{id,at,amount,...,status}]
+  events         jsonb not null default '[]'::jsonb    -- timeline / thread
+);
+
+create index if not exists requests_status_idx  on requests(status);
+create index if not exists requests_created_idx on requests(created_at desc);
+create index if not exists requests_ref_idx      on requests(lower(ref));
+
+-- Lock the table down. The Node server uses the SERVICE ROLE key,
+-- which bypasses RLS. Enabling RLS with no policies means the public
+-- anon key cannot read or write directly — only your server can.
+alter table requests enable row level security;
+
+-- ------------------------------------------------------------
+--  Atomic mutation helpers (called via supabase.rpc from server)
+-- ------------------------------------------------------------
+create or replace function append_event(p_id uuid, p_event jsonb)
+  returns void language sql as $$
+    update requests set events = events || p_event, updated_at = now() where id = p_id;
+$$;
+
+create or replace function add_quote(p_id uuid, p_quote jsonb, p_event jsonb)
+  returns void language sql as $$
+    update requests
+       set quotes = quotes || p_quote,
+           events = events || p_event,
+           status = case
+                      when status in ('approved','design','manufacturing','trial','shipped','aftersales','closed','declined')
+                      then status else 'quoted' end,
+           updated_at = now()
+     where id = p_id;
+$$;
+
+create or replace function set_request_status(p_id uuid, p_status text, p_event jsonb)
+  returns void language sql as $$
+    update requests set status = p_status, events = events || p_event, updated_at = now() where id = p_id;
+$$;
+
+create or replace function classify_request(p_id uuid, p_group text, p_priority text, p_status text, p_event jsonb)
+  returns void language sql as $$
+    update requests
+       set "group" = p_group,
+           priority = p_priority,
+           status = coalesce(p_status, status),
+           events = events || p_event,
+           updated_at = now()
+     where id = p_id;
+$$;
+
+create or replace function respond_quote(p_id uuid, p_quote_id text, p_decision text, p_event jsonb)
+  returns void language sql as $$
+    update requests
+       set quotes = (
+             select coalesce(jsonb_agg(
+                      case when q->>'id' = p_quote_id
+                           then jsonb_set(q, '{status}', to_jsonb(p_decision))
+                           else q end), '[]'::jsonb)
+             from jsonb_array_elements(quotes) q),
+           events = events || p_event,
+           updated_at = now()
+     where id = p_id;
+$$;
+
+-- ============================================================
+--  STORAGE
+--  The server auto-creates a PRIVATE bucket named "attachments"
+--  on first boot. If you prefer to create it by hand:
+--  Dashboard → Storage → New bucket → name: attachments, Public: OFF
+--  Files are served to users through short-lived signed URLs.
+-- ============================================================

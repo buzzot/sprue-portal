@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprue — mould request &amp; quotation portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#F5F7FA; --surface:#FFFFFF; --surface-2:#EEF1F5; --surface-3:#E4E9F0;
+    --ink:#0F1720; --ink-2:#37424F; --muted:#6C7A8A; --faint:#95A2B1;
+    --line:#DBE1E9; --line-2:#C9D2DD;
+    --accent:#1E5F8C; --accent-ink:#164A6E; --accent-soft:#E4EEF6; --accent-line:#B8D2E6;
+    --amber:#B4791A; --amber-soft:#FBF0DC; --amber-line:#EAD3A0;
+    --green:#2E7D4F; --green-soft:#E2F1E8; --green-line:#B6DcC4;
+    --red:#B23B3B; --red-soft:#F8E4E3; --red-line:#EBBFBD;
+    --shadow:0 1px 2px rgba(15,23,32,.05),0 6px 20px -8px rgba(15,23,32,.12);
+    --shadow-lg:0 12px 40px -12px rgba(15,23,32,.28);
+    --radius:10px; --radius-sm:7px;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"IBM Plex Sans","Noto Sans SC",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0C1116; --surface:#141B22; --surface-2:#1B242D; --surface-3:#232F3A;
+      --ink:#EAEFF4; --ink-2:#C3CDD7; --muted:#8695A4; --faint:#63717F;
+      --line:#26313B; --line-2:#33414D;
+      --accent:#5AA0D6; --accent-ink:#8CC0E8; --accent-soft:#15293A; --accent-line:#264A66;
+      --amber:#D8A54A; --amber-soft:#2E2513; --amber-line:#5A4620;
+      --green:#5DBE86; --green-soft:#16281E; --green-line:#2C4C39;
+      --red:#DE7A78; --red-soft:#2C1717; --red-line:#573030;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
+      --shadow-lg:0 16px 48px -12px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0C1116; --surface:#141B22; --surface-2:#1B242D; --surface-3:#232F3A;
+    --ink:#EAEFF4; --ink-2:#C3CDD7; --muted:#8695A4; --faint:#63717F;
+    --line:#26313B; --line-2:#33414D;
+    --accent:#5AA0D6; --accent-ink:#8CC0E8; --accent-soft:#15293A; --accent-line:#264A66;
+    --amber:#D8A54A; --amber-soft:#2E2513; --amber-line:#5A4620;
+    --green:#5DBE86; --green-soft:#16281E; --green-line:#2C4C39;
+    --red:#DE7A78; --red-soft:#2C1717; --red-line:#573030;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
+    --shadow-lg:0 16px 48px -12px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--sans); background:var(--ground); color:var(--ink); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh}
+  h1,h2,h3,h4{margin:0; font-weight:600; line-height:1.25; text-wrap:balance}
+  p{margin:0}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  button{font-family:inherit}
+  ::selection{background:var(--accent-soft)}
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; padding:0 22px; height:60px; background:color-mix(in srgb,var(--surface) 88%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:11px; cursor:pointer; user-select:none}
+  .brand .glyph{width:30px; height:30px; border-radius:8px; flex:none; background:linear-gradient(150deg,var(--accent),var(--accent-ink)); display:grid; place-items:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+  .brand .glyph svg{width:17px; height:17px}
+  .brand .wm{font-weight:700; letter-spacing:.14em; font-size:15px}
+  .brand .wm b{color:var(--accent)}
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.04em; margin-top:-2px}
+  .spacer{flex:1}
+  .langsw{display:inline-flex; border:1px solid var(--line-2); border-radius:999px; overflow:hidden; background:var(--surface)}
+  .langsw button{border:0; background:transparent; color:var(--muted); font-size:12.5px; padding:5px 11px; cursor:pointer; transition:.12s; line-height:1.4}
+  .langsw button:hover{color:var(--ink); background:var(--surface-2)}
+  .langsw button.on{background:var(--accent); color:#fff}
+  .rolebadge{font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 11px; display:inline-flex; align-items:center; gap:6px}
+  .rolebadge .dot{width:6px; height:6px; border-radius:50%; background:var(--accent)}
+  .rolebadge.admin .dot{background:var(--amber)}
+  .rolebadge .lo{cursor:pointer; margin-left:4px; color:var(--faint)}
+  .rolebadge .lo:hover{color:var(--red)}
+
+  .wrap{max-width:1160px; margin:0 auto; padding:26px 22px 80px}
+  .wrap.narrow{max-width:760px}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:7px; font-size:14px; font-weight:500; line-height:1; padding:10px 16px; border-radius:var(--radius-sm); border:1px solid var(--line-2); background:var(--surface); color:var(--ink); cursor:pointer; transition:background .13s,border-color .13s,transform .05s}
+  .btn:hover{background:var(--surface-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{background:var(--accent-ink)}
+  .btn.ghost{background:transparent; border-color:transparent; color:var(--muted)}
+  .btn.ghost:hover{background:var(--surface-2); color:var(--ink)}
+  .btn.sm{padding:7px 12px; font-size:13px}
+  .btn svg{width:15px; height:15px}
+  .btnrow{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow)}
+  .pad{padding:22px}
+  .stack{display:flex; flex-direction:column; gap:18px}
+  .grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr}}
+
+  label.fld{display:flex; flex-direction:column; gap:6px}
+  .fld > .lab{font-size:12.5px; font-weight:500; color:var(--ink-2); letter-spacing:.01em}
+  .fld .req{color:var(--red); margin-left:2px}
+  .hint{font-size:12px; color:var(--faint)}
+  input[type=text],input[type=email],input[type=tel],input[type=number],input[type=password],textarea,select{font-family:inherit; font-size:14px; color:var(--ink); background:var(--surface); border:1px solid var(--line-2); border-radius:var(--radius-sm); padding:9px 11px; width:100%; transition:border-color .13s,box-shadow .13s}
+  textarea{resize:vertical; min-height:80px; line-height:1.5}
+  input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+  input::placeholder,textarea::placeholder{color:var(--faint)}
+  select{appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%236C7A8A' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat:no-repeat; background-position:right 11px center; padding-right:30px}
+
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{font-size:13px; padding:7px 12px; border-radius:999px; cursor:pointer; border:1px solid var(--line-2); background:var(--surface); color:var(--ink-2); transition:.13s; user-select:none}
+  .chip:hover{border-color:var(--accent-line)}
+  .chip.on{background:var(--accent-soft); border-color:var(--accent-line); color:var(--accent-ink); font-weight:500}
+
+  .pill{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; padding:3px 10px; border-radius:999px; letter-spacing:.01em; white-space:nowrap; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink-2)}
+  .pill .d{width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.9}
+  .pill.info{background:var(--accent-soft); border-color:var(--accent-line); color:var(--accent-ink)}
+  .pill.amber{background:var(--amber-soft); border-color:var(--amber-line); color:var(--amber)}
+  .pill.green{background:var(--green-soft); border-color:var(--green-line); color:var(--green)}
+  .pill.red{background:var(--red-soft); border-color:var(--red-line); color:var(--red)}
+  .pill.neutral{background:var(--surface-2); border-color:var(--line-2); color:var(--muted)}
+
+  .eyebrow{font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600}
+  .muted{color:var(--muted)}
+  .divider{height:1px; background:var(--line); border:0; margin:0}
+  .toolnote{font-size:12.5px; color:var(--muted); display:flex; gap:8px; align-items:flex-start}
+  .toolnote svg{width:15px; height:15px; flex:none; margin-top:1px; color:var(--faint)}
+
+  .hero{padding:34px 0 8px}
+  .hero h1{font-size:32px; letter-spacing:-.01em}
+  .hero p.lede{font-size:16px; color:var(--muted); margin-top:12px; max-width:62ch}
+  .pathgrid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:26px}
+  @media(max-width:720px){.pathgrid{grid-template-columns:1fr}}
+  .path{padding:24px; border-radius:var(--radius); cursor:pointer; position:relative; overflow:hidden; border:1px solid var(--line); background:var(--surface); box-shadow:var(--shadow); transition:transform .14s,box-shadow .14s,border-color .14s}
+  .path:hover{transform:translateY(-2px); box-shadow:var(--shadow-lg); border-color:var(--accent-line)}
+  .path.sel{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+  .path .ic{width:38px; height:38px; border-radius:9px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); margin-bottom:14px}
+  .path .ic svg{width:20px; height:20px}
+  .ic svg{width:20px; height:20px}
+  .path h3{font-size:18px; margin-bottom:6px}
+  .path p{color:var(--muted); font-size:13.5px}
+  .path .go{margin-top:16px; font-size:13px; font-weight:500; color:var(--accent); display:inline-flex; align-items:center; gap:6px}
+
+  .sechead{display:flex; align-items:baseline; gap:12px; margin-bottom:6px}
+  .sechead h2{font-size:19px}
+  .sechead .n{font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:600}
+  .secsub{color:var(--muted); font-size:13.5px; margin-bottom:16px}
+
+  .mould{border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface-2); overflow:hidden}
+  .mould > summary{list-style:none; cursor:pointer; padding:12px 16px; display:flex; align-items:center; gap:10px; font-weight:600; font-size:14px}
+  .mould > summary::-webkit-details-marker{display:none}
+  .mould > summary .ix{font-family:var(--mono); color:var(--accent); font-size:13px}
+  .mould > summary .car{margin-left:auto; transition:transform .15s; color:var(--muted)}
+  .mould[open] > summary .car{transform:rotate(90deg)}
+  .mould .body{padding:16px; border-top:1px solid var(--line); background:var(--surface)}
+
+  .drop{display:flex; align-items:center; justify-content:center; gap:7px; border:1.5px dashed var(--line-2); border-radius:var(--radius-sm); padding:16px; text-align:center; color:var(--muted); cursor:pointer; transition:.13s; font-size:13.5px}
+  .drop:hover{border-color:var(--accent-line); background:var(--accent-soft); color:var(--accent-ink)}
+  .drop svg{width:16px; height:16px; flex:none}
+  .attlist{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+  .att{display:flex; align-items:center; gap:10px; padding:8px 11px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface); font-size:13px}
+  .att .fi{width:26px; height:26px; border-radius:6px; background:var(--surface-2); display:grid; place-items:center; color:var(--muted); flex:none}
+  .att .fi svg{width:14px;height:14px}
+  .att .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .att .sz{color:var(--faint); font-size:12px; margin-left:auto; white-space:nowrap}
+  .att .x{cursor:pointer; color:var(--faint); padding:2px}
+  .att .x:hover{color:var(--red)}
+
+  .actionbar{position:sticky; bottom:0; margin-top:20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:14px 18px; border:1px solid var(--line); border-radius:var(--radius); background:color-mix(in srgb,var(--surface) 92%,transparent); backdrop-filter:blur(8px); box-shadow:var(--shadow)}
+  .actionbar .msg{font-size:13px; color:var(--muted)}
+
+  .console{display:grid; grid-template-columns:minmax(320px,380px) 1fr; gap:20px; align-items:start}
+  @media(max-width:900px){.console{grid-template-columns:1fr}}
+  .statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px}
+  @media(max-width:640px){.statrow{grid-template-columns:repeat(2,1fr)}}
+  .stat{padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface)}
+  .stat .v{font-family:var(--mono); font-size:24px; font-weight:600; line-height:1}
+  .stat .k{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-top:7px}
+  .stat.act .v{color:var(--amber)}
+
+  .listtools{display:flex; gap:8px; margin-bottom:12px}
+  .listtools input{flex:1}
+  .reqlist{display:flex; flex-direction:column; gap:9px; max-height:72vh; overflow:auto; padding-right:2px}
+  .reqcard{position:relative; padding:13px 15px 13px 18px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface); cursor:pointer; transition:.12s}
+  .reqcard::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; background:var(--line-2)}
+  .reqcard.s-info::before{background:var(--accent)}
+  .reqcard.s-amber::before{background:var(--amber)}
+  .reqcard.s-green::before{background:var(--green)}
+  .reqcard.s-red::before{background:var(--red)}
+  .reqcard.s-neutral::before{background:var(--faint)}
+  .reqcard:hover{border-color:var(--line-2); background:var(--surface-2)}
+  .reqcard.sel{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+  .reqcard .top{display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap}
+  .reqcard .ti{font-weight:600; font-size:14px; margin-bottom:3px}
+  .reqcard .meta{font-size:12px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap}
+
+  .detail .dh{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:4px}
+  .detail .dh h2{font-size:20px}
+  .tabs{display:flex; gap:2px; border-bottom:1px solid var(--line); margin:16px 0 20px; overflow-x:auto}
+  .tab{padding:9px 14px; font-size:13.5px; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:500; white-space:nowrap}
+  .tab:hover{color:var(--ink)}
+  .tab.on{color:var(--accent); border-color:var(--accent)}
+
+  .kv{display:grid; grid-template-columns:160px 1fr; gap:8px 16px; font-size:14px}
+  .kv dt{color:var(--muted); font-size:13px}
+  .kv dd{margin:0; color:var(--ink)}
+  @media(max-width:520px){.kv{grid-template-columns:1fr; gap:2px 0} .kv dd{margin-bottom:8px}}
+
+  .tblwrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius-sm)}
+  table.moulds{border-collapse:collapse; width:100%; font-size:13px; min-width:560px}
+  table.moulds th,table.moulds td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap}
+  table.moulds th{background:var(--surface-2); color:var(--muted); font-weight:500; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; position:sticky; top:0}
+  table.moulds td{font-family:var(--mono); color:var(--ink-2)}
+  table.moulds td.name{font-family:var(--sans); font-weight:600; color:var(--ink)}
+  table.moulds tr:last-child td{border-bottom:0}
+
+  .thread{display:flex; flex-direction:column; gap:14px}
+  .msg{display:flex; gap:11px}
+  .msg .av{width:30px; height:30px; border-radius:8px; flex:none; display:grid; place-items:center; font-size:12px; font-weight:600; font-family:var(--mono)}
+  .msg.admin .av{background:var(--amber-soft); color:var(--amber)}
+  .msg.client .av{background:var(--accent-soft); color:var(--accent)}
+  .msg.system .av{background:var(--surface-2); color:var(--muted)}
+  .msg .bub{flex:1; min-width:0}
+  .msg .who{font-size:12.5px; margin-bottom:3px}
+  .msg .who b{font-weight:600}
+  .msg .who .t{color:var(--faint); margin-left:8px; font-size:11.5px}
+  .msg .txt{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-sm); padding:9px 12px; font-size:13.5px; white-space:pre-wrap; word-break:break-word}
+  .msg.internal .txt{background:var(--amber-soft); border-color:var(--amber-line)}
+  .msg .txt .tag{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--amber); font-weight:600; display:block; margin-bottom:3px}
+
+  .quote{border:1px solid var(--amber-line); background:var(--amber-soft); border-radius:var(--radius-sm); padding:15px 16px}
+  .quote .amt{font-family:var(--mono); font-size:22px; font-weight:600; color:var(--ink)}
+  .quote .qgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; font-size:12.5px}
+  .quote .qgrid .k{color:var(--muted); display:block}
+  .quote .qgrid .v{font-family:var(--mono); font-weight:500}
+
+  .timeline{position:relative; padding-left:24px}
+  .timeline::before{content:""; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background:var(--line)}
+  .tl{position:relative; padding-bottom:18px}
+  .tl:last-child{padding-bottom:0}
+  .tl .node{position:absolute; left:-24px; top:2px; width:14px; height:14px; border-radius:50%; background:var(--surface); border:2px solid var(--line-2)}
+  .tl.info .node{border-color:var(--accent)} .tl.amber .node{border-color:var(--amber)}
+  .tl.green .node{border-color:var(--green)} .tl.red .node{border-color:var(--red)}
+  .tl .tt{font-size:13.5px; font-weight:500}
+  .tl .ts{font-size:11.5px; color:var(--faint); font-family:var(--mono)}
+
+  .banner{display:flex; gap:10px; align-items:flex-start; padding:11px 14px; border-radius:var(--radius-sm); font-size:13px; border:1px solid var(--red-line); background:var(--red-soft); color:var(--ink-2); margin-bottom:16px}
+  .banner svg{width:16px; height:16px; flex:none; margin-top:1px; color:var(--red)}
+
+  #toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); z-index:90; opacity:0; pointer-events:none; transition:.22s}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+  #toast .t{background:var(--ink); color:var(--ground); padding:10px 18px; border-radius:999px; font-size:13.5px; box-shadow:var(--shadow-lg); display:flex; align-items:center; gap:8px; max-width:90vw}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(10,15,20,.5); z-index:80; display:grid; place-items:center; padding:20px; backdrop-filter:blur(2px)}
+  .modal{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-lg); width:100%; max-width:440px; padding:24px}
+  .modal h3{font-size:18px; margin-bottom:6px}
+
+  .empty{text-align:center; padding:48px 20px; color:var(--muted)}
+  .empty svg{width:34px; height:34px; color:var(--faint); margin-bottom:12px}
+  .badge-count{font-family:var(--mono); font-size:11px; background:var(--accent); color:#fff; border-radius:999px; padding:1px 7px; font-weight:600}
+  .spin{display:inline-block; width:16px; height:16px; border:2px solid var(--line-2); border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; vertical-align:-3px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  [hidden]{display:none !important}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap"><p class="muted"><span class="spin"></span></p></div></div>
+<div id="modal-root"></div>
+<div id="toast"><div class="t"><span id="toast-msg"></span></div></div>
+
+<script>
+"use strict";
+(function(){
+/* ============================ Icons ============================ */
+const I = {
+  spr:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M8 3v4M16 3v4M6 7h12l-1.5 4H7.5L6 7zM9 11l-.5 6a3.5 3.5 0 007 0L15 11"/></svg>',
+  client:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+  admin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+  file:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>',
+  img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/></svg>',
+  wrench:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.9 6.9a2.12 2.12 0 01-3-3l6.9-6.9a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+  chk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+};
+
+/* ============================ i18n ============================ */
+const LANGS = [['en','EN'],['ru','РУ'],['zh','中文']];
+const LOCALE = {en:'en-US', ru:'ru-RU', zh:'zh-CN'};
+function detectLocale(){
+  const cands = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language||'en']);
+  for(const raw of cands){
+    const c=String(raw||'').toLowerCase();
+    if(c.startsWith('zh')) return 'zh';
+    if(c.startsWith('ru')) return 'ru';
+    if(c.startsWith('en')) return 'en';
+  }
+  return 'en';
+}
+let L = detectLocale();               // default to the visitor's browser locale
+try{ const s=localStorage.getItem('sprue_lang'); if(s&&LOCALE[s]) L=s; }catch(e){}  // explicit choice wins
+function T(v){ if(v==null) return ''; if(typeof v==='string') return v; return v[L]||v.en||''; }
+
+const UI = {
+  brand_sub:{en:'mould request & quotation portal',ru:'портал заявок и расчётов',zh:'模具询价与报价门户'},
+  loading:{en:'Loading…',ru:'Загрузка…',zh:'加载中…'},
+  home:{en:'Home',ru:'Главная',zh:'首页'},
+  back:{en:'Back',ru:'Назад',zh:'返回'},
+  rfq_eyebrow:{en:'Request for quotation',ru:'Запрос на расчёт',zh:'询价请求'},
+  hero_title:{en:'Send us your mould enquiry — track it to shipment.',ru:'Отправьте заявку на пресс-форму — отслеживайте её до отгрузки.',zh:'提交您的模具需求 — 全程跟踪至发货。'},
+  hero_lede:{en:'Submit a structured request for injection tooling, moulded parts or toolroom work. Attach drawings, get a quotation, and follow every step from DFM through trial, delivery and aftersales in one place.',ru:'Оформите структурированную заявку на пресс-формы, литьевые детали или ремонт оснастки. Приложите чертежи, получите расчёт и отслеживайте каждый этап — от DFM до испытаний, поставки и обслуживания.',zh:'为注塑模具、注塑零件或模房工作提交结构化请求。上传图纸、获取报价，并在一处跟踪从 DFM 到试模、交付和售后的每一步。'},
+  cust_title:{en:"I'm a customer",ru:'Я заказчик',zh:'我是客户'},
+  cust_desc:{en:'Start a new request, or track an existing one with your reference number.',ru:'Создайте новую заявку или отслеживайте существующую по номеру.',zh:'创建新请求，或使用参考编号跟踪现有请求。'},
+  cust_go:{en:'Submit a request',ru:'Отправить заявку',zh:'提交请求'},
+  team_title:{en:'Team access',ru:'Доступ для команды',zh:'团队访问'},
+  team_desc:{en:'Review incoming enquiries, classify, quote and manage the project pipeline.',ru:'Просматривайте заявки, классифицируйте, оценивайте и ведите проекты.',zh:'审阅来件、分类、报价并管理项目流程。'},
+  team_go:{en:'Open admin console',ru:'Открыть консоль',zh:'打开管理控制台'},
+  landing_note:{en:'Customers only see requests opened with their own reference number and email; your team sees everything from the admin console.',ru:'Заказчики видят только свои заявки по номеру и email; команда видит всё в консоли администратора.',zh:'客户仅能看到用自己参考编号和邮箱打开的请求；团队可在管理控制台查看全部内容。'},
+  new_title:{en:'New request',ru:'Новая заявка',zh:'新建请求'},
+  new_desc:{en:'Fill in a short questionnaire for your product type and attach files.',ru:'Заполните короткую анкету по вашему типу продукта и приложите файлы.',zh:'填写与产品类型对应的简短问卷并上传文件。'},
+  start:{en:'Start',ru:'Начать',zh:'开始'},
+  track_title:{en:'Track a request',ru:'Отследить заявку',zh:'跟踪请求'},
+  track_desc:{en:'Enter the reference number you received to see status & replies.',ru:'Введите полученный номер, чтобы увидеть статус и ответы.',zh:'输入您收到的参考编号以查看状态和回复。'},
+  lookup:{en:'Look up',ru:'Найти',zh:'查询'},
+  sec_details:{en:'Your details',ru:'Ваши данные',zh:'您的信息'},
+  contact_name:{en:'Contact name',ru:'Контактное лицо',zh:'联系人姓名'},
+  email:{en:'Email',ru:'Эл. почта',zh:'邮箱'},
+  company:{en:'Company',ru:'Компания',zh:'公司'},
+  phone:{en:'Phone',ru:'Телефон',zh:'电话'},
+  ph_fullname:{en:'Full name',ru:'Имя и фамилия',zh:'姓名'},
+  ph_email:{en:'you@company.com',ru:'you@company.com',zh:'you@company.com'},
+  ph_company:{en:'Company name',ru:'Название компании',zh:'公司名称'},
+  optional:{en:'Optional',ru:'Необязательно',zh:'选填'},
+  sec_need:{en:'What do you need?',ru:'Что вам нужно?',zh:'您需要什么？'},
+  sec_need_sub:{en:'Pick the type of work — the questionnaire adapts to it.',ru:'Выберите тип работ — анкета подстроится под него.',zh:'选择工作类型 — 问卷将随之调整。'},
+  sec_desc:{en:'Description & files',ru:'Описание и файлы',zh:'描述与文件'},
+  describe_label:{en:'Describe your project',ru:'Опишите ваш проект',zh:'描述您的项目'},
+  describe_ph:{en:"Application, key requirements, anything the questionnaire didn't cover…",ru:'Применение, ключевые требования, всё, что не вошло в анкету…',zh:'应用、关键要求，以及问卷未涵盖的任何内容…'},
+  attachments:{en:'Attachments',ru:'Вложения',zh:'附件'},
+  attachments_hint:{en:'Drawings, 3D files (STEP/IGES), photos, specs. Images & PDF preview in-portal.',ru:'Чертежи, 3D-файлы (STEP/IGES), фото, спецификации. Изображения и PDF открываются в портале.',zh:'图纸、3D文件（STEP/IGES）、照片、规格。图片和PDF可在门户中预览。'},
+  add_files:{en:'Click to add files',ru:'Нажмите, чтобы добавить файлы',zh:'点击添加文件'},
+  submit_review_msg:{en:'Review your entries, then submit.',ru:'Проверьте данные и отправьте.',zh:'请检查后提交。'},
+  submit_btn:{en:'Submit request',ru:'Отправить заявку',zh:'提交请求'},
+  how_many:{en:'How many moulds in this enquiry?',ru:'Сколько форм в этой заявке?',zh:'本次询价包含几套模具？'},
+  add_each_note:{en:"Add the details for each mould. They'll appear as a comparison table for our engineers.",ru:'Укажите данные по каждой форме. Они появятся в виде сравнительной таблицы для наших инженеров.',zh:'请填写每套模具的详细信息，将以对照表形式提供给我们的工程师。'},
+  need_name_email:{en:'Please add your name and email.',ru:'Укажите имя и email.',zh:'请填写姓名和邮箱。'},
+  choose_type:{en:'Please choose a request type.',ru:'Выберите тип заявки.',zh:'请选择请求类型。'},
+  file_too_large:{en:'is over 20 MB — skipped.',ru:'больше 20 МБ — пропущен.',zh:'超过 20 MB — 已跳过。'},
+  uploading:{en:'Uploading files…',ru:'Загрузка файлов…',zh:'正在上传文件…'},
+  submitting:{en:'Submitting…',ru:'Отправка…',zh:'提交中…'},
+  done_title:{en:'Request received',ru:'Заявка получена',zh:'请求已收到'},
+  done_desc:{en:'We’ve logged your enquiry. Save your reference number — use it to track status and reply to our team.',ru:'Мы зарегистрировали вашу заявку. Сохраните номер — по нему можно отслеживать статус и отвечать нашей команде.',zh:'我们已登记您的询价。请保存参考编号 — 用它跟踪状态并回复我们的团队。'},
+  track_this:{en:'Track this request',ru:'Отследить заявку',zh:'跟踪此请求'},
+  submit_another:{en:'Submit another',ru:'Новая заявка',zh:'再提交一个'},
+  track_head:{en:'Track your request',ru:'Отслеживание заявки',zh:'跟踪您的请求'},
+  track_sub:{en:'Enter the reference number from your confirmation, and the email you used.',ru:'Введите номер из подтверждения и использованный email.',zh:'输入确认信息中的参考编号及所用邮箱。'},
+  ref_number:{en:'Reference number',ru:'Номер заявки',zh:'参考编号'},
+  open_request:{en:'Open request',ru:'Открыть заявку',zh:'打开请求'},
+  err_not_found:{en:'No request found for that reference and email.',ru:'Заявка с таким номером и email не найдена.',zh:'未找到与该编号和邮箱匹配的请求。'},
+  track_another:{en:'Track another',ru:'Другая заявка',zh:'跟踪其他'},
+  conversation_quote:{en:'Conversation & quotation',ru:'Переписка и расчёт',zh:'沟通与报价'},
+  reply_ph:{en:'Reply to the team, or add more information…',ru:'Ответьте команде или добавьте информацию…',zh:'回复团队，或补充更多信息…'},
+  attach:{en:'Attach',ru:'Прикрепить',zh:'附加'},
+  send:{en:'Send',ru:'Отправить',zh:'发送'},
+  your_details:{en:'Your request details',ru:'Детали вашей заявки',zh:'您的请求详情'},
+  description_label:{en:'Description',ru:'Описание',zh:'描述'},
+  progress:{en:'Progress',ru:'Ход выполнения',zh:'进度'},
+  no_messages:{en:'No messages yet.',ru:'Сообщений пока нет.',zh:'暂无消息。'},
+  our_team:{en:'Our team',ru:'Наша команда',zh:'我们的团队'},
+  system:{en:'System',ru:'Система',zh:'系统'},
+  quotation:{en:'Quotation',ru:'Расчёт',zh:'报价'},
+  lead_time:{en:'Lead time',ru:'Срок',zh:'交期'},
+  validity:{en:'Validity',ru:'Срок действия',zh:'有效期'},
+  incoterm:{en:'Incoterm',ru:'Инкотермс',zh:'贸易术语'},
+  accept_quote:{en:'Accept quotation',ru:'Принять расчёт',zh:'接受报价'},
+  decline:{en:'Decline',ru:'Отклонить',zh:'拒绝'},
+  st_accepted:{en:'accepted',ru:'принято',zh:'已接受'},
+  st_declined:{en:'declined',ru:'отклонено',zh:'已拒绝'},
+  stat_total:{en:'Total requests',ru:'Всего заявок',zh:'请求总数'},
+  stat_action:{en:'Need your action',ru:'Требуют действий',zh:'需处理'},
+  stat_awaiting:{en:'Awaiting decision',ru:'Ожидают решения',zh:'等待决定'},
+  stat_inprod:{en:'In production',ru:'В производстве',zh:'生产中'},
+  search_ph:{en:'Search ref, name, company…',ru:'Поиск по номеру, имени, компании…',zh:'搜索编号、姓名、公司…'},
+  filter_all:{en:'All',ru:'Все',zh:'全部'},
+  filter_action:{en:'Needs action',ru:'Требуют действий',zh:'需处理'},
+  select_prompt:{en:'Select a request to review its questionnaire, quote it, and manage the project.',ru:'Выберите заявку, чтобы просмотреть анкету, оценить её и вести проект.',zh:'选择一个请求以查看问卷、报价并管理项目。'},
+  no_match:{en:'No requests match.',ru:'Нет подходящих заявок.',zh:'没有匹配的请求。'},
+  none_yet:{en:'No requests yet.',ru:'Заявок пока нет.',zh:'暂无请求。'},
+  tab_overview:{en:'Overview',ru:'Обзор',zh:'概览'},
+  tab_moulds:{en:'Moulds',ru:'Формы',zh:'模具'},
+  tab_thread:{en:'Thread',ru:'Переписка',zh:'沟通'},
+  tab_quote:{en:'Quotation',ru:'Расчёт',zh:'报价'},
+  tab_manage:{en:'Manage',ru:'Управление',zh:'管理'},
+  tab_timeline:{en:'Timeline',ru:'История',zh:'时间线'},
+  ov_customer:{en:'Customer',ru:'Заказчик',zh:'客户'},
+  ov_type:{en:'Type',ru:'Тип',zh:'类型'},
+  ov_submitted:{en:'Submitted',ru:'Отправлено',zh:'提交时间'},
+  ov_group:{en:'Group',ru:'Группа',zh:'分组'},
+  ov_priority:{en:'Priority',ru:'Приоритет',zh:'优先级'},
+  not_classified:{en:'Not classified',ru:'Не классифицировано',zh:'未分类'},
+  email_customer:{en:'Email customer',ru:'Написать заказчику',zh:'邮件联系客户'},
+  no_moulds:{en:'No moulds entered.',ru:'Формы не указаны.',zh:'未填写模具。'},
+  no_permould:{en:'This request type has no per-mould table.',ru:'Для этого типа заявки нет таблицы по формам.',zh:'此请求类型没有分模具表格。'},
+  msg_to_customer_ph:{en:'Message to the customer…',ru:'Сообщение заказчику…',zh:'发送给客户的消息…'},
+  internal_note:{en:'Internal note',ru:'Внутренняя заметка',zh:'内部备注'},
+  internal_tag:{en:'Internal note — not shown to customer',ru:'Внутренняя заметка — не видна заказчику',zh:'内部备注 — 不向客户显示'},
+  new_quotation:{en:'New quotation',ru:'Новый расчёт',zh:'新建报价'},
+  amount:{en:'Amount',ru:'Сумма',zh:'金额'},
+  currency:{en:'Currency',ru:'Валюта',zh:'货币'},
+  notes_to_customer:{en:'Notes to customer',ru:'Примечания заказчику',zh:'给客户的备注'},
+  notes_ph:{en:'Scope, payment terms, exclusions…',ru:'Объём, условия оплаты, исключения…',zh:'范围、付款条件、除外项…'},
+  send_quote:{en:'Send quotation to customer',ru:'Отправить расчёт заказчику',zh:'向客户发送报价'},
+  classify_head:{en:'Classify',ru:'Классификация',zh:'分类'},
+  group:{en:'Group',ru:'Группа',zh:'分组'},
+  priority:{en:'Priority',ru:'Приоритет',zh:'优先级'},
+  note_optional:{en:'Note (optional)',ru:'Заметка (необязательно)',zh:'备注（选填）'},
+  note_ph_class:{en:'Internal classification note',ru:'Внутренняя заметка классификации',zh:'内部分类备注'},
+  save_classification:{en:'Save classification',ru:'Сохранить классификацию',zh:'保存分类'},
+  advance_status:{en:'Advance status',ru:'Изменить статус',zh:'推进状态'},
+  current:{en:'Current',ru:'Текущий',zh:'当前'},
+  set_status:{en:'Set status',ru:'Установить статус',zh:'设置状态'},
+  note_timeline:{en:'Note (shown in timeline)',ru:'Заметка (в истории)',zh:'备注（显示在时间线）'},
+  note_ph_status:{en:'e.g. DFM report sent',ru:'напр. отправлен отчёт DFM',zh:'例如：已发送DFM报告'},
+  update_status:{en:'Update status',ru:'Обновить статус',zh:'更新状态'},
+  login_head:{en:'Team access',ru:'Доступ для команды',zh:'团队访问'},
+  login_sub:{en:'Enter the team passcode to open the admin console.',ru:'Введите пароль команды, чтобы открыть консоль.',zh:'输入团队访问密码以打开管理控制台。'},
+  passcode:{en:'Passcode',ru:'Пароль',zh:'密码'},
+  enter:{en:'Enter',ru:'Войти',zh:'进入'},
+  cancel:{en:'Cancel',ru:'Отмена',zh:'取消'},
+  logout:{en:'Sign out',ru:'Выйти',zh:'退出'},
+  wrong_passcode:{en:'Incorrect passcode.',ru:'Неверный пароль.',zh:'密码错误。'},
+  admin_badge:{en:'Admin console',ru:'Консоль администратора',zh:'管理控制台'},
+  client_badge:{en:'Customer portal',ru:'Портал заказчика',zh:'客户门户'},
+  sent_to_team:{en:'Sent to the team.',ru:'Отправлено команде.',zh:'已发送给团队。'},
+  sent_customer:{en:'Sent to customer.',ru:'Отправлено заказчику.',zh:'已发送给客户。'},
+  internal_saved:{en:'Internal note saved.',ru:'Внутренняя заметка сохранена.',zh:'内部备注已保存。'},
+  quote_sent:{en:'Quotation sent.',ru:'Расчёт отправлен.',zh:'报价已发送。'},
+  classified_ok:{en:'Classified.',ru:'Классифицировано.',zh:'已分类。'},
+  status_updated:{en:'Status updated.',ru:'Статус обновлён.',zh:'状态已更新。'},
+  write_message:{en:'Write a message first.',ru:'Сначала напишите сообщение.',zh:'请先填写消息。'},
+  enter_amount:{en:'Enter an amount.',ru:'Укажите сумму.',zh:'请输入金额。'},
+  network_error:{en:'Network error — please try again.',ru:'Ошибка сети — попробуйте ещё раз.',zh:'网络错误 — 请重试。'},
+  session_expired:{en:'Session expired — please sign in again.',ru:'Сессия истекла — войдите снова.',zh:'会话已过期 — 请重新登录。'},
+  no_questionnaire:{en:'No questionnaire fields filled.',ru:'Поля анкеты не заполнены.',zh:'未填写问卷字段。'},
+  files_selected:{en:'file(s)',ru:'файл(ов)',zh:'个文件'},
+};
+const t = k => T(UI[k]);
+
+/* ============================ Config ============================ */
+const STATUSES = [
+  {key:'submitted',    tone:'info',    phase:{en:'Intake',ru:'Приём',zh:'受理'},     label:{en:'Submitted',ru:'Отправлено',zh:'已提交'}},
+  {key:'under_review', tone:'info',    phase:{en:'Intake',ru:'Приём',zh:'受理'},     label:{en:'Under review',ru:'На рассмотрении',zh:'审核中'}},
+  {key:'classified',   tone:'info',    phase:{en:'Intake',ru:'Приём',zh:'受理'},     label:{en:'Verified & classified',ru:'Проверено и классифицировано',zh:'已核实分类'}},
+  {key:'info_needed',  tone:'red',     phase:{en:'Intake',ru:'Приём',zh:'受理'},     label:{en:'More info needed',ru:'Требуется информация',zh:'需补充信息'}},
+  {key:'quoted',       tone:'amber',   phase:{en:'Quotation',ru:'Расчёт',zh:'报价'}, label:{en:'Quotation sent',ru:'Расчёт отправлен',zh:'已发送报价'}},
+  {key:'approved',     tone:'green',   phase:{en:'Quotation',ru:'Расчёт',zh:'报价'}, label:{en:'Approved / PO',ru:'Утверждено / PO',zh:'已批准 / 订单'}},
+  {key:'design',       tone:'info',    phase:{en:'Production',ru:'Производство',zh:'生产'}, label:{en:'Design & DFM',ru:'Проектирование и DFM',zh:'设计与DFM'}},
+  {key:'manufacturing',tone:'info',    phase:{en:'Production',ru:'Производство',zh:'生产'}, label:{en:'Manufacturing',ru:'Изготовление',zh:'制造中'}},
+  {key:'trial',        tone:'info',    phase:{en:'Production',ru:'Производство',zh:'生产'}, label:{en:'Trial (T0 / T1)',ru:'Испытания (T0 / T1)',zh:'试模 (T0 / T1)'}},
+  {key:'shipped',      tone:'green',   phase:{en:'Delivery',ru:'Поставка',zh:'交付'}, label:{en:'Shipped',ru:'Отгружено',zh:'已发货'}},
+  {key:'aftersales',   tone:'green',   phase:{en:'Post',ru:'Постпродажа',zh:'售后'}, label:{en:'Aftersales',ru:'Постпродажное обслуживание',zh:'售后'}},
+  {key:'closed',       tone:'neutral', phase:{en:'Post',ru:'Постпродажа',zh:'售后'}, label:{en:'Closed',ru:'Закрыто',zh:'已关闭'}},
+  {key:'declined',     tone:'neutral', phase:{en:'Post',ru:'Постпродажа',zh:'售后'}, label:{en:'Declined',ru:'Отклонено',zh:'已拒绝'}},
+];
+const statusOf = k => STATUSES.find(s=>s.key===k) || STATUSES[0];
+const GROUPS = [
+  {v:'Injection mould',en:'Injection mould',ru:'Пресс-форма',zh:'注塑模具'},
+  {v:'Parts production',en:'Parts production',ru:'Производство деталей',zh:'零件生产'},
+  {v:'Toolroom / repair',en:'Toolroom / repair',ru:'Ремонт оснастки',zh:'模房 / 维修'},
+  {v:'Prototype',en:'Prototype',ru:'Прототип',zh:'样件'},
+  {v:'Other',en:'Other',ru:'Другое',zh:'其他'},
+];
+const PRIORITIES = [
+  {v:'Standard',en:'Standard',ru:'Обычный',zh:'标准'},
+  {v:'High',en:'High',ru:'Высокий',zh:'高'},
+  {v:'Urgent',en:'Urgent',ru:'Срочный',zh:'紧急'},
+];
+const MATERIALS = ['ABS','PP','PE','PC','PA6','PA66','PA6-GF30','POM','PMMA','PC/ABS','TPU','TPE','PBT','PET','PPS','LSR',{v:'Other',en:'Other',ru:'Другое',zh:'其他'}];
+
+const CATEGORIES = {
+  injection_mould:{
+    label:{en:'Plastic injection mould',ru:'Пресс-форма для литья пластмасс',zh:'塑料注塑模具'},
+    blurb:{en:'New tooling — one or several moulds. Tell us about each cavity, resin and machine.',ru:'Новая оснастка — одна или несколько форм. Данные по каждой полости, материалу и станку.',zh:'新模具 — 单套或多套。请提供每个型腔、树脂和注塑机的信息。'},
+    icon:I.box,
+    fields:[
+      {k:'project',t:'text',req:true,label:{en:'Part / project name',ru:'Название детали / проекта',zh:'零件 / 项目名称'},ph:{en:'e.g. Dashboard air vent',ru:'напр. Воздуховод панели',zh:'例如：仪表板出风口'}},
+      {k:'eau',t:'number',label:{en:'Annual volume (EAU, pcs/yr)',ru:'Годовой объём (шт/год)',zh:'年产量（件/年）'},ph:{en:'e.g. 200000',ru:'напр. 200000',zh:'例如：200000'}},
+      {k:'target',t:'text',label:{en:'Target tool price (optional)',ru:'Целевая цена формы (необяз.)',zh:'目标模具价格（选填）'},ph:{en:'e.g. USD 25,000',ru:'напр. 25 000 USD',zh:'例如：USD 25,000'}},
+      {k:'timeline',t:'text',label:{en:'Required delivery / timeline',ru:'Требуемый срок / график',zh:'要求交期 / 时间'},ph:{en:'e.g. T1 in 8 weeks',ru:'напр. T1 через 8 недель',zh:'例如：8周内T1'}},
+    ],
+    perItem:{
+      countKey:'mould_count',
+      countLabel:UI.how_many,
+      itemLabel:{en:'Mould',ru:'Форма',zh:'模具'},
+      itemFields:[
+        {k:'name',t:'text',req:true,col:'name',label:{en:'Mould name / reference',ru:'Название / номер формы',zh:'模具名称 / 编号'},ph:{en:'e.g. Housing-A',ru:'напр. Корпус-A',zh:'例如：外壳-A'}},
+        {k:'material',t:'select',options:MATERIALS,label:{en:'Part material (resin)',ru:'Материал детали (полимер)',zh:'零件材料（树脂）'}},
+        {k:'filler',t:'text',label:{en:'Filler / additive',ru:'Наполнитель / добавка',zh:'填料 / 添加剂'},ph:{en:'e.g. 30% glass fibre',ru:'напр. 30% стекловолокно',zh:'例如：30%玻纤'}},
+        {k:'cavities',t:'number',label:{en:'Number of cavities',ru:'Число гнёзд',zh:'型腔数量'},ph:{en:'e.g. 4',ru:'напр. 4',zh:'例如：4'}},
+        {k:'runner',t:'select',label:{en:'Runner type',ru:'Тип литниковой системы',zh:'流道类型'},options:[
+          {v:'Cold runner',en:'Cold runner',ru:'Холодноканальная',zh:'冷流道'},
+          {v:'Hot runner',en:'Hot runner',ru:'Горячеканальная',zh:'热流道'},
+          {v:'Semi-hot / valve gate',en:'Semi-hot / valve gate',ru:'Полугорячая / клапанный впуск',zh:'半热流道 / 阀浇口'}]},
+        {k:'runner_brand',t:'text',label:{en:'Hot-runner brand (if any)',ru:'Бренд горячего канала',zh:'热流道品牌（如有）'},ph:{en:'e.g. Yudo, Mold-Masters',ru:'напр. Yudo, Mold-Masters',zh:'例如：Yudo、Mold-Masters'}},
+        {k:'steel',t:'select',label:{en:'Mould / cavity steel',ru:'Сталь формы / гнезда',zh:'模具 / 型腔钢材'},options:['P20','718H','2311','NAK80','2344 / H13','S136 / 420SS',{v:'Beryllium copper',en:'Beryllium copper',ru:'Бериллиевая бронза',zh:'铍铜'},{v:'Other',en:'Other',ru:'Другое',zh:'其他'}]},
+        {k:'base',t:'select',label:{en:'Mould base standard',ru:'Стандарт пакета формы',zh:'模架标准'},options:['LKM','DME','HASCO','Misumi','Futaba',{v:'Custom',en:'Custom',ru:'Нестандартный',zh:'非标'}]},
+        {k:'machine',t:'text',label:{en:'Injection machine (tonnage)',ru:'Термопластавтомат (тоннаж)',zh:'注塑机（吨位）'},ph:{en:'e.g. 160 T',ru:'напр. 160 т',zh:'例如：160T'}},
+        {k:'dims',t:'text',label:{en:'Part size L×W×H (mm)',ru:'Габариты Д×Ш×В (мм)',zh:'零件尺寸 长×宽×高 (mm)'},ph:{en:'e.g. 120×80×40',ru:'напр. 120×80×40',zh:'例如：120×80×40'}},
+        {k:'weight',t:'text',label:{en:'Part weight (g)',ru:'Масса детали (г)',zh:'零件重量 (g)'},ph:{en:'e.g. 45',ru:'напр. 45',zh:'例如：45'}},
+        {k:'finish',t:'text',label:{en:'Surface finish / texture',ru:'Отделка / текстура',zh:'表面处理 / 纹理'},ph:{en:'e.g. SPI-A2, VDI 27',ru:'напр. SPI-A2, VDI 27',zh:'例如：SPI-A2、VDI 27'}},
+        {k:'life',t:'text',label:{en:'Required tool life (shots)',ru:'Ресурс формы (циклы)',zh:'模具寿命（模次）'},ph:{en:'e.g. 1,000,000',ru:'напр. 1 000 000',zh:'例如：1,000,000'}},
+        {k:'accessories',t:'multi',label:{en:'Additional features',ru:'Дополнительные функции',zh:'附加功能'},options:[
+          {v:'Hydraulic core pull',en:'Hydraulic core pull',ru:'Гидроотвод стержня',zh:'液压抽芯'},
+          {v:'Slider / lifter',en:'Slider / lifter',ru:'Слайдер / подъёмник',zh:'滑块 / 斜顶'},
+          {v:'Unscrewing device',en:'Unscrewing device',ru:'Устройство вывинчивания',zh:'旋转脱螺纹'},
+          {v:'Hot-runner controller',en:'Hot-runner controller',ru:'Контроллер горячего канала',zh:'热流道控制器'},
+          {v:'Date / cavity stamp',en:'Date / cavity stamp',ru:'Клеймо даты / гнезда',zh:'日期 / 型腔章'},
+          {v:'In-mould sensors',en:'In-mould sensors',ru:'Датчики в форме',zh:'模内传感器'},
+          {v:'Air valve / poppet',en:'Air valve / poppet',ru:'Клапан воздушного сброса',zh:'气阀 / 顶针阀'},
+          {v:'Insert moulding',en:'Insert moulding',ru:'Литьё с закладными',zh:'嵌件成型'},
+          {v:'Two-shot / 2K',en:'Two-shot / 2K',ru:'Двухкомпонентное / 2K',zh:'双色 / 2K'}]},
+        {k:'notes',t:'textarea',label:{en:'Mould-specific notes',ru:'Примечания по форме',zh:'模具备注'}},
+      ]
+    }
+  },
+  parts_production:{
+    label:{en:'Injection moulded parts (production)',ru:'Литьевые детали (производство)',zh:'注塑零件（量产）'},
+    blurb:{en:'You have (or we build) the tool — you need moulded parts produced to volume.',ru:'У вас есть форма (или мы её изготовим) — нужно серийное производство деталей.',zh:'您已有（或由我们制造）模具 — 需要批量生产注塑零件。'},
+    icon:I.wrench,
+    fields:[
+      {k:'project',t:'text',req:true,label:{en:'Part name',ru:'Название детали',zh:'零件名称'},ph:{en:'e.g. Cable clip',ru:'напр. Кабельный зажим',zh:'例如：线夹'}},
+      {k:'material',t:'select',options:MATERIALS,label:{en:'Material (resin)',ru:'Материал (полимер)',zh:'材料（树脂）'}},
+      {k:'color',t:'text',label:{en:'Colour / masterbatch',ru:'Цвет / суперконцентрат',zh:'颜色 / 色母'},ph:{en:'e.g. RAL 9005 black',ru:'напр. RAL 9005 чёрный',zh:'例如：RAL 9005 黑'}},
+      {k:'eau',t:'number',label:{en:'Order / annual volume (pcs)',ru:'Заказ / годовой объём (шт)',zh:'订单 / 年产量（件）'},ph:{en:'e.g. 50000',ru:'напр. 50000',zh:'例如：50000'}},
+      {k:'dims',t:'text',label:{en:'Part size L×W×H (mm)',ru:'Габариты Д×Ш×В (мм)',zh:'零件尺寸 长×宽×高 (mm)'},ph:{en:'e.g. 40×15×10',ru:'напр. 40×15×10',zh:'例如：40×15×10'}},
+      {k:'weight',t:'text',label:{en:'Part weight (g)',ru:'Масса детали (г)',zh:'零件重量 (g)'},ph:{en:'e.g. 6',ru:'напр. 6',zh:'例如：6'}},
+      {k:'tolerance',t:'text',label:{en:'Key tolerances',ru:'Ключевые допуски',zh:'关键公差'},ph:{en:'e.g. ±0.05 mm on bore',ru:'напр. ±0,05 мм по отверстию',zh:'例如：孔径 ±0.05 mm'}},
+      {k:'tool_status',t:'select',label:{en:'Tooling status',ru:'Состояние оснастки',zh:'模具状态'},options:[
+        {v:'I have an existing tool',en:'I have an existing tool',ru:'У меня есть форма',zh:'我已有模具'},
+        {v:'Tool needs to be built',en:'Tool needs to be built',ru:'Нужно изготовить форму',zh:'需要制造模具'},
+        {v:'Not sure',en:'Not sure',ru:'Не уверен',zh:'不确定'}]},
+      {k:'secondary',t:'multi',label:{en:'Secondary operations',ru:'Вторичные операции',zh:'二次加工'},options:[
+        {v:'Assembly',en:'Assembly',ru:'Сборка',zh:'装配'},
+        {v:'Pad printing / laser',en:'Pad printing / laser',ru:'Тампопечать / лазер',zh:'移印 / 激光'},
+        {v:'Ultrasonic welding',en:'Ultrasonic welding',ru:'Ультразвуковая сварка',zh:'超声波焊接'},
+        {v:'Painting',en:'Painting',ru:'Окраска',zh:'喷涂'},
+        {v:'Insert fitting',en:'Insert fitting',ru:'Установка вставок',zh:'嵌件安装'},
+        {v:'Packaging',en:'Packaging',ru:'Упаковка',zh:'包装'}]},
+    ]
+  },
+  repair:{
+    label:{en:'Toolroom / mould repair',ru:'Ремонт / доработка формы',zh:'模房 / 模具维修'},
+    blurb:{en:'Repair, modification, engineering change or refurbishment of an existing mould.',ru:'Ремонт, доработка, инженерные изменения или восстановление существующей формы.',zh:'对现有模具进行维修、修改、工程变更或翻新。'},
+    icon:I.wrench,
+    fields:[
+      {k:'project',t:'text',req:true,label:{en:'Mould / tool reference',ru:'Номер формы / оснастки',zh:'模具 / 工装编号'},ph:{en:'e.g. Tool #4471',ru:'напр. Форма #4471',zh:'例如：模具 #4471'}},
+      {k:'issue',t:'select',label:{en:'Type of work',ru:'Вид работ',zh:'工作类型'},options:[
+        {v:'Damage repair',en:'Damage repair',ru:'Ремонт повреждений',zh:'损坏维修'},
+        {v:'Engineering change (ECO)',en:'Engineering change (ECO)',ru:'Инженерное изменение (ECO)',zh:'工程变更(ECO)'},
+        {v:'Refurbish / re-polish',en:'Refurbish / re-polish',ru:'Восстановление / полировка',zh:'翻新 / 抛光'},
+        {v:'Add cavity',en:'Add cavity',ru:'Добавить гнездо',zh:'增加型腔'},
+        {v:'Convert cold→hot runner',en:'Convert cold→hot runner',ru:'Перевод на горячий канал',zh:'冷流道改热流道'},
+        {v:'Other',en:'Other',ru:'Другое',zh:'其他'}]},
+      {k:'machine',t:'text',label:{en:'Where is the tool now?',ru:'Где сейчас находится форма?',zh:'模具目前在哪里？'},ph:{en:'e.g. Our plant',ru:'напр. Наш завод',zh:'例如：我方工厂'}},
+      {k:'timeline',t:'text',label:{en:'Required turnaround',ru:'Требуемый срок',zh:'要求周期'},ph:{en:'e.g. 2 weeks',ru:'напр. 2 недели',zh:'例如：2周'}},
+    ]
+  },
+  other:{
+    label:{en:'General enquiry',ru:'Общий запрос',zh:'一般咨询'},
+    blurb:{en:'Anything else — quotes, capacity questions, materials advice.',ru:'Всё остальное — расчёты, вопросы по мощностям, материалам.',zh:'其他事项 — 报价、产能咨询、材料建议。'},
+    icon:I.info,
+    fields:[
+      {k:'subject',t:'text',req:true,label:{en:'Subject',ru:'Тема',zh:'主题'},ph:{en:'What is this about?',ru:'О чём запрос?',zh:'咨询内容是什么？'}},
+    ]
+  }
+};
+
+/* option helpers */
+const optVal = o => typeof o==='string'? o : o.v;
+const optLabel = o => typeof o==='string'? o : T(o);
+function dispField(f, v){
+  if(f && f.options && v!=null && v!==''){
+    if(Array.isArray(v)) return v.map(x=>dispOne(f,x)).join(', ');
+    return dispOne(f, v);
+  }
+  return Array.isArray(v)? v.join(', ') : v;
+}
+function dispOne(f, x){ const o=f.options.find(o=>optVal(o)===x); return o? optLabel(o) : x; }
+
+/* ============================ API ============================ */
+let TOKEN = null;
+try{ TOKEN = localStorage.getItem('sprue_admin_token'); }catch(e){}
+async function api(pathname, opts){
+  opts = opts||{};
+  const headers = opts.headers || {};
+  if(!opts.raw){ headers['Content-Type']='application/json'; }
+  if(opts.auth && TOKEN){ headers['Authorization']='Bearer '+TOKEN; }
+  const res = await fetch(pathname, {method:opts.method||'GET', headers, body:opts.body});
+  if(res.status===401 && opts.auth){ clearToken(); throw {code:'unauthorized'}; }
+  let data=null; try{ data=await res.json(); }catch(e){}
+  if(!res.ok){ throw (data||{code:'http_'+res.status}); }
+  return data;
+}
+function setToken(tk){ TOKEN=tk; try{ localStorage.setItem('sprue_admin_token',tk);}catch(e){} }
+function clearToken(){ TOKEN=null; try{ localStorage.removeItem('sprue_admin_token');}catch(e){} }
+async function uploadFiles(fileList){
+  const files=[...fileList].filter(f=>{ if(f.size>20*1024*1024){ toast(f.name+' '+t('file_too_large')); return false;} return true; });
+  if(!files.length) return [];
+  const fd=new FormData(); files.forEach(f=>fd.append('files',f));
+  const r=await api('/api/uploads',{method:'POST',raw:true,body:fd});
+  return r.attachments||[];
+}
+
+/* ============================ State ============================ */
+const S = { view:'landing', role:null, draft:null, clientCreds:null, tracked:null,
+  list:[], current:null, reqId:null, tab:'overview', q:'', filter:'', composeAtts:[] };
+
+/* ============================ Utils ============================ */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(ts){ return new Date(ts).toLocaleDateString(LOCALE[L],{month:'short',day:'numeric',year:'numeric'}); }
+function fmtDT(ts){ const d=new Date(ts); return d.toLocaleDateString(LOCALE[L],{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString(LOCALE[L],{hour:'2-digit',minute:'2-digit'}); }
+function ago(ts){ const s=(Date.now()-ts)/1000; if(s<60)return t('system')&&''; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }
+function fmtSize(b){ if(b<1024)return b+' B'; if(b<1048576)return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+function toast(m){ const el=document.getElementById('toast'); document.getElementById('toast-msg').textContent=m; el.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2800); }
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+function h(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+
+/* ============================ Field rendering ============================ */
+function fieldHTML(f, val){
+  const req = f.req? '<span class="req">*</span>':'';
+  const lab = esc(T(f.label))+req;
+  const ph = esc(T(f.ph)||'');
+  let ctrl='';
+  if(f.t==='textarea') ctrl=`<textarea data-k="${f.k}" placeholder="${ph}">${esc(val||'')}</textarea>`;
+  else if(f.t==='select') ctrl=`<select data-k="${f.k}"><option value="">—</option>`+f.options.map(o=>`<option value="${esc(optVal(o))}" ${val===optVal(o)?'selected':''}>${esc(optLabel(o))}</option>`).join('')+`</select>`;
+  else if(f.t==='multi'){ const set=new Set(Array.isArray(val)?val:[]); ctrl=`<div class="chips" data-multi="${f.k}">`+f.options.map(o=>`<span class="chip ${set.has(optVal(o))?'on':''}" data-v="${esc(optVal(o))}">${esc(optLabel(o))}</span>`).join('')+`</div>`; }
+  else { const type=f.t==='number'?'number':'text'; ctrl=`<input data-k="${f.k}" type="${type}" placeholder="${ph}" value="${esc(val==null?'':val)}">`; }
+  return `<label class="fld"><span class="lab">${lab}</span>${ctrl}</label>`;
+}
+function bindFields(root, fields, store){
+  fields.forEach(f=>{
+    if(f.t==='multi'){ const c=$(`[data-multi="${f.k}"]`,root); if(c) c.addEventListener('click',e=>{ const chip=e.target.closest('.chip'); if(!chip)return; chip.classList.toggle('on'); store[f.k]=$$('.chip.on',c).map(x=>x.dataset.v); }); }
+    else { const el=$(`[data-k="${f.k}"]`,root); if(el) el.addEventListener('input',()=>{ store[f.k]=el.value; }); }
+  });
+}
+
+/* ============================ Shell ============================ */
+function langSwitch(){
+  return `<div class="langsw">`+LANGS.map(([code,lab])=>`<button data-lang="${code}" class="${L===code?'on':''}">${lab}</button>`).join('')+`</div>`;
+}
+function roleBadge(){
+  if(S.role==='admin') return `<span class="rolebadge admin"><span class="dot"></span>${esc(t('admin_badge'))}<span class="lo" data-logout title="${esc(t('logout'))}">${I.x}</span></span>`;
+  if(S.role==='client') return `<span class="rolebadge"><span class="dot"></span>${esc(t('client_badge'))}</span>`;
+  return '';
+}
+function shell(inner){
+  return `<div class="topbar">
+    <div class="brand" data-home>
+      <span class="glyph">${I.spr}</span>
+      <span><span class="wm">S<b>P</b>RUE</span><span class="sub">${esc(t('brand_sub'))}</span></span>
+    </div>
+    <div class="spacer"></div>
+    ${roleBadge()} ${langSwitch()}
+  </div>${inner}`;
+}
+
+/* ============================ Views ============================ */
+function vLanding(){
+  return shell(`<div class="wrap">
+    <div class="hero">
+      <div class="eyebrow">${esc(t('rfq_eyebrow'))}</div>
+      <h1>${esc(t('hero_title'))}</h1>
+      <p class="lede">${esc(t('hero_lede'))}</p>
+    </div>
+    <div class="pathgrid">
+      <div class="path" data-go="client_new">
+        <div class="ic">${I.client}</div><h3>${esc(t('cust_title'))}</h3><p>${esc(t('cust_desc'))}</p>
+        <span class="go">${esc(t('cust_go'))} ${I.arrow}</span>
+      </div>
+      <div class="path" data-admin>
+        <div class="ic">${I.admin}</div><h3>${esc(t('team_title'))}</h3><p>${esc(t('team_desc'))}</p>
+        <span class="go">${esc(t('team_go'))} ${I.arrow}</span>
+      </div>
+    </div>
+    <div style="margin-top:22px" class="toolnote">${I.info}<span>${esc(t('landing_note'))}</span></div>
+  </div>`);
+}
+function vClientNew(){
+  return shell(`<div class="wrap narrow">
+    <button class="btn ghost sm" data-go="landing">${I.back} ${esc(t('home'))}</button>
+    <div class="pathgrid" style="margin-top:14px">
+      <div class="path" data-go="client_form"><div class="ic">${I.plus}</div><h3>${esc(t('new_title'))}</h3><p>${esc(t('new_desc'))}</p><span class="go">${esc(t('start'))} ${I.arrow}</span></div>
+      <div class="path" data-go="client_track"><div class="ic">${I.client}</div><h3>${esc(t('track_title'))}</h3><p>${esc(t('track_desc'))}</p><span class="go">${esc(t('lookup'))} ${I.arrow}</span></div>
+    </div>
+  </div>`);
+}
+
+/* ---------- Client form ---------- */
+function newDraft(){ return {client:{}, category:null, fields:{}, moulds:[], description:'', attachments:[]}; }
+function vClientForm(){
+  if(!S.draft) S.draft=newDraft();
+  const d=S.draft;
+  const cats=Object.entries(CATEGORIES).map(([k,c])=>`<div class="path ${d.category===k?'sel':''}" style="padding:18px" data-cat="${k}"><div class="ic">${c.icon}</div><h3 style="font-size:16px">${esc(T(c.label))}</h3><p>${esc(T(c.blurb))}</p></div>`).join('');
+  return shell(`<div class="wrap narrow">
+    <button class="btn ghost sm" data-go="client_new">${I.back} ${esc(t('back'))}</button>
+    <form id="reqform" class="stack" style="margin-top:14px" onsubmit="return false">
+      <div class="card pad stack">
+        <div class="sechead"><span class="n">01</span><h2>${esc(t('sec_details'))}</h2></div>
+        <div class="grid2">
+          <label class="fld"><span class="lab">${esc(t('contact_name'))} <span class="req">*</span></span><input data-c="name" value="${esc(d.client.name||'')}" placeholder="${esc(t('ph_fullname'))}"></label>
+          <label class="fld"><span class="lab">${esc(t('email'))} <span class="req">*</span></span><input data-c="email" type="email" value="${esc(d.client.email||'')}" placeholder="${esc(t('ph_email'))}"></label>
+          <label class="fld"><span class="lab">${esc(t('company'))}</span><input data-c="company" value="${esc(d.client.company||'')}" placeholder="${esc(t('ph_company'))}"></label>
+          <label class="fld"><span class="lab">${esc(t('phone'))}</span><input data-c="phone" type="tel" value="${esc(d.client.phone||'')}" placeholder="${esc(t('optional'))}"></label>
+        </div>
+      </div>
+      <div class="card pad stack">
+        <div class="sechead"><span class="n">02</span><h2>${esc(t('sec_need'))}</h2></div>
+        <div class="secsub">${esc(t('sec_need_sub'))}</div>
+        <div class="pathgrid" id="catpick" style="margin-top:0">${cats}</div>
+      </div>
+      <div id="qwrap"></div>
+      <div class="card pad stack" id="descwrap" ${d.category?'':'hidden'}>
+        <div class="sechead"><span class="n">04</span><h2>${esc(t('sec_desc'))}</h2></div>
+        <label class="fld"><span class="lab">${esc(t('describe_label'))}</span><textarea data-c="description" placeholder="${esc(t('describe_ph'))}">${esc(d.description||'')}</textarea></label>
+        <div>
+          <span class="lab" style="font-size:12.5px;font-weight:500;color:var(--ink-2)">${esc(t('attachments'))}</span>
+          <div class="hint" style="margin:3px 0 8px">${esc(t('attachments_hint'))}</div>
+          <label class="drop">${I.file} ${esc(t('add_files'))}<input type="file" id="attinput" multiple hidden></label>
+          <div class="attlist" id="attlist"></div>
+        </div>
+      </div>
+      <div class="actionbar" id="submitbar" ${d.category?'':'hidden'}>
+        <span class="msg" id="submitmsg">${esc(t('submit_review_msg'))}</span>
+        <div style="flex:1"></div>
+        <button class="btn primary" id="submitbtn">${esc(t('submit_btn'))} ${I.arrow}</button>
+      </div>
+    </form>
+  </div>`);
+}
+function mountClientForm(root){
+  const d=S.draft, form=$('#reqform',root);
+  $$('[data-c]',form).forEach(el=>el.addEventListener('input',()=>{ const k=el.dataset.c; if(k==='description') d.description=el.value; else d.client[k]=el.value; }));
+  $$('#catpick [data-cat]',form).forEach(cd=>cd.addEventListener('click',()=>{ d.category=cd.dataset.cat; $$('#catpick [data-cat]',form).forEach(x=>x.classList.remove('sel')); cd.classList.add('sel'); renderQuestionnaire(root); $('#descwrap',root).hidden=false; $('#submitbar',root).hidden=false; }));
+  if(d.category) renderQuestionnaire(root);
+  const ai=$('#attinput',form);
+  $('.drop',form).addEventListener('click',e=>{ if(e.target!==ai) ai.click(); });
+  ai.addEventListener('change',()=>{ for(const f of ai.files){ if(f.size>20*1024*1024){ toast(f.name+' '+t('file_too_large')); continue;} d.attachments.push({file:f, name:f.name, size:f.size, type:f.type}); } ai.value=''; renderAttList(root); });
+  renderAttList(root);
+  $('#submitbtn',root).addEventListener('click', submitRequest);
+}
+function renderQuestionnaire(root){
+  const d=S.draft, c=CATEGORIES[d.category]; if(!c) return;
+  const wrap=$('#qwrap',root);
+  let inner=`<div class="card pad stack"><div class="sechead"><span class="n">03</span><h2>${esc(T(c.label))}</h2></div><div class="grid2">${c.fields.map(f=>fieldHTML(f,d.fields[f.k])).join('')}</div>`;
+  if(c.perItem){ const pi=c.perItem; const cnt=d.fields[pi.countKey]||d.moulds.length||1;
+    inner+=`<hr class="divider"><label class="fld" style="max-width:300px"><span class="lab">${esc(T(pi.countLabel))}</span><input type="number" min="1" max="20" id="mcount" value="${cnt}"></label><div class="secsub" style="margin:0">${esc(t('add_each_note'))}</div><div id="moulds" class="stack" style="gap:10px"></div>`;
+  }
+  inner+=`</div>`; wrap.innerHTML=inner;
+  bindFields(wrap, c.fields, d.fields);
+  if(c.perItem){ const pi=c.perItem, cin=$('#mcount',wrap); const rebuild=()=>{ let n=Math.max(1,Math.min(20,parseInt(cin.value)||1)); d.fields[pi.countKey]=n; renderMoulds(wrap,pi,n); }; cin.addEventListener('change',rebuild); rebuild(); }
+}
+function renderMoulds(root, pi, n){
+  const d=S.draft, box=$('#moulds',root);
+  while(d.moulds.length<n) d.moulds.push({}); d.moulds.length=n;
+  box.innerHTML=d.moulds.map((m,i)=>`<details class="mould" ${i===0?'open':''}><summary><span class="ix">${esc(T(pi.itemLabel))} ${i+1}</span> <span class="mname">${esc(m.name||'')}</span> <span class="car">${I.arrow}</span></summary><div class="body"><div class="grid2" data-mi="${i}">${pi.itemFields.map(f=>fieldHTML(f,m[f.k])).join('')}</div></div></details>`).join('');
+  d.moulds.forEach((m,i)=>{ const g=$(`[data-mi="${i}"]`,box); bindFields(g,pi.itemFields,m); const nel=$('[data-k="name"]',g); if(nel) nel.addEventListener('input',()=>{ const s=nel.closest('.mould').querySelector('.mname'); if(s) s.textContent=nel.value; }); });
+}
+function renderAttList(root){
+  const box=$('#attlist',root); if(!box) return; const d=S.draft;
+  box.innerHTML=d.attachments.map((a,i)=>`<div class="att"><span class="fi">${I.file}</span><span class="nm">${esc(a.name)}</span><span class="sz">${fmtSize(a.size)}</span><span class="x" data-rm="${i}">${I.x}</span></div>`).join('');
+  $$('[data-rm]',box).forEach(x=>x.addEventListener('click',()=>{ d.attachments.splice(+x.dataset.rm,1); renderAttList(root); }));
+}
+async function submitRequest(){
+  const d=S.draft, c=d.client;
+  if(!c.name||!c.email){ toast(t('need_name_email')); return; }
+  if(!d.category){ toast(t('choose_type')); return; }
+  const btn=$('#submitbtn'), msg=$('#submitmsg');
+  btn.disabled=true;
+  try{
+    let atts=[];
+    if(d.attachments.length){ msg.innerHTML=`<span class="spin"></span> ${esc(t('uploading'))}`; atts=await uploadFiles(d.attachments.map(a=>a.file)); }
+    msg.innerHTML=`<span class="spin"></span> ${esc(t('submitting'))}`;
+    const cat=CATEGORIES[d.category];
+    const body=JSON.stringify({ client:c, category:d.category, categoryLabel:cat.label.en, title:d.fields.project||d.fields.subject||cat.label.en, fields:d.fields, moulds:cat.perItem?d.moulds:[], description:d.description, attachments:atts });
+    const r=await api('/api/requests',{method:'POST',body});
+    S.clientCreds={ref:r.ref, email:c.email}; S.doneRef=r.ref; S.draft=null; S.view='client_done'; render();
+  }catch(e){ btn.disabled=false; msg.textContent=t('submit_review_msg'); toast(t('network_error')); }
+}
+function vClientDone(){
+  return shell(`<div class="wrap narrow">
+    <div class="card pad stack" style="align-items:center;text-align:center;padding:40px 26px">
+      <div class="ic" style="width:52px;height:52px;border-radius:12px;background:var(--green-soft);color:var(--green);display:grid;place-items:center">${I.chk}</div>
+      <h2 style="font-size:22px">${esc(t('done_title'))}</h2>
+      <p class="muted" style="max-width:48ch">${esc(t('done_desc'))}</p>
+      <div class="mono" style="font-size:22px;font-weight:600;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px 20px">${esc(S.doneRef)}</div>
+      <div class="btnrow" style="justify-content:center">
+        <button class="btn primary" data-track-now>${esc(t('track_this'))} ${I.arrow}</button>
+        <button class="btn" data-go="client_form">${esc(t('submit_another'))}</button>
+      </div>
+    </div>
+  </div>`);
+}
+/* ---------- Client track ---------- */
+function vClientTrack(){
+  const cr=S.clientCreds||{};
+  return shell(`<div class="wrap narrow">
+    <button class="btn ghost sm" data-go="client_new">${I.back} ${esc(t('back'))}</button>
+    <div class="card pad stack" style="margin-top:14px;max-width:460px">
+      <div class="sechead"><h2>${esc(t('track_head'))}</h2></div>
+      <div class="secsub" style="margin:0">${esc(t('track_sub'))}</div>
+      <label class="fld"><span class="lab">${esc(t('ref_number'))}</span><input id="tref" placeholder="RFQ-26-0001" value="${esc(cr.ref||'')}"></label>
+      <label class="fld"><span class="lab">${esc(t('email'))}</span><input id="temail" type="email" placeholder="${esc(t('ph_email'))}" value="${esc(cr.email||'')}"></label>
+      <button class="btn primary" id="trackbtn">${esc(t('open_request'))} ${I.arrow}</button>
+      <div id="trackerr" class="hint" style="color:var(--red)"></div>
+    </div>
+  </div>`);
+}
+async function doTrack(){
+  const ref=$('#tref').value.trim(), email=$('#temail').value.trim();
+  const btn=$('#trackbtn'); btn.disabled=true;
+  try{
+    const r=await api('/api/track',{method:'POST',body:JSON.stringify({ref,email})});
+    S.clientCreds={ref,email}; S.tracked=r.request; S.role='client'; S.view='client_detail'; render();
+  }catch(e){ btn.disabled=false; $('#trackerr').textContent=t('err_not_found'); }
+}
+
+/* ---------- Shared detail pieces ---------- */
+function statusPill(k){ const s=statusOf(k); return `<span class="pill ${s.tone}"><span class="d"></span>${esc(T(s.label))}</span>`; }
+function mouldTable(req){
+  const cat=CATEGORIES[req.category]; if(!cat||!cat.perItem||!(req.moulds||[]).length) return '';
+  const cols=cat.perItem.itemFields;
+  return `<div class="tblwrap"><table class="moulds"><thead><tr>${cols.map(c=>`<th>${esc(T(c.label))}</th>`).join('')}</tr></thead><tbody>${req.moulds.map(m=>`<tr>${cols.map(c=>{ const v=dispField(c,m[c.k]); return `<td class="${c.col==='name'?'name':''}">${v?esc(v):'<span class="muted">—</span>'}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function fieldSummary(req){
+  const cat=CATEGORIES[req.category]; if(!cat) return '';
+  const rows=cat.fields.map(f=>{ const v=dispField(f,req.fields[f.k]); if(!v) return ''; return `<dt>${esc(T(f.label))}</dt><dd>${esc(v)}</dd>`; }).join('');
+  return rows? `<dl class="kv">${rows}</dl>` : `<p class="muted">${esc(t('no_questionnaire'))}</p>`;
+}
+function attRow(a){
+  const isImg=/^image\//.test(a.type||''); const href=a.url||'#';
+  return `<a class="att" href="${esc(href)}" target="_blank" rel="noopener"><span class="fi">${isImg?I.img:I.file}</span><span class="nm">${esc(a.name)}</span><span class="sz">${fmtSize(a.size)}</span></a>`;
+}
+function quoteCard(req,q,forClient){
+  const canRespond=forClient && q.status==='pending';
+  const stLabel = q.status==='accepted'? t('st_accepted') : t('st_declined');
+  return `<div class="quote">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="eyebrow" style="color:var(--amber)">${esc(t('quotation'))}</span>
+      ${q.status!=='pending'?`<span class="pill ${q.status==='accepted'?'green':'neutral'}"><span class="d"></span>${esc(stLabel)}</span>`:''}
+      <span style="margin-left:auto;color:var(--faint);font-size:11.5px;font-family:var(--mono)">${fmtDT(q.at)}</span>
+    </div>
+    <div class="amt" style="margin-top:8px">${esc(q.currency)} ${esc(q.amount)}</div>
+    <div class="qgrid">
+      <div><span class="k">${esc(t('lead_time'))}</span><span class="v">${esc(q.leadTime||'—')}</span></div>
+      <div><span class="k">${esc(t('validity'))}</span><span class="v">${esc(q.validity||'—')}</span></div>
+      <div><span class="k">${esc(t('incoterm'))}</span><span class="v">${esc(q.incoterm||'—')}</span></div>
+    </div>
+    ${q.notes?`<p style="margin-top:10px;font-size:13px;white-space:pre-wrap">${esc(q.notes)}</p>`:''}
+    ${canRespond?`<div class="btnrow" style="margin-top:12px"><button class="btn sm primary" data-quoteresp="accepted" data-qid="${q.id}">${esc(t('accept_quote'))}</button><button class="btn sm" data-quoteresp="declined" data-qid="${q.id}">${esc(t('decline'))}</button></div>`:''}
+  </div>`;
+}
+function threadHTML(req, forClient){
+  const evs=(req.events||[]).filter(e=>['message','internal','quote','status','classify'].includes(e.kind)).slice().sort((a,b)=>a.at-b.at);
+  if(!evs.length) return `<p class="muted">${esc(t('no_messages'))}</p>`;
+  return `<div class="thread">`+evs.map(e=>{
+    if(e.kind==='quote'){ const q=(req.quotes||[]).find(x=>x.id===e.quoteId); return q?quoteCard(req,q,forClient):''; }
+    const role=e.role||'system';
+    const who = role==='admin'?t('our_team'):(role==='client'?esc(req.client.name):t('system'));
+    const av = role==='admin'?'ST':(role==='client'?esc((req.client.name||'C').slice(0,2).toUpperCase()):'·');
+    const cls = e.kind==='internal'?'admin internal':role;
+    const tag = e.kind==='internal'?`<span class="tag">${esc(t('internal_tag'))}</span>`:'';
+    const body = (e.kind==='status'||e.kind==='classify')? `<span class="muted">${esc(e.text)}</span>` : esc(e.text);
+    const atts = (e.atts&&e.atts.length)? `<div class="attlist">${e.atts.map(attRow).join('')}</div>`:'';
+    return `<div class="msg ${cls}"><div class="av">${av}</div><div class="bub"><div class="who"><b>${who}</b><span class="t">${fmtDT(e.at)}</span></div><div class="txt">${tag}${body}</div>${atts}</div></div>`;
+  }).join('')+`</div>`;
+}
+function timelineHTML(req){
+  const evs=(req.events||[]).slice().sort((a,b)=>b.at-a.at);
+  return `<div class="timeline">`+evs.map(e=>{
+    const tone = e.kind==='status'? statusOf(e.status||'submitted').tone : (e.kind==='quote'?'amber':(e.kind==='internal'?'amber':'info'));
+    const who = e.role==='admin'?t('our_team'):(e.role==='client'?t('ov_customer'):t('system'));
+    return `<div class="tl ${tone}"><span class="node"></span><div class="tt">${esc(e.text)}</div><div class="ts">${fmtDT(e.at)} · ${esc(who)}</div></div>`;
+  }).join('')+`</div>`;
+}
+
+/* ---------- Client detail ---------- */
+function vClientDetail(){
+  const req=S.tracked; if(!req) return vClientTrack();
+  return shell(`<div class="wrap narrow">
+    <button class="btn ghost sm" data-go="client_track">${I.back} ${esc(t('track_another'))}</button>
+    <div class="detail" style="margin-top:12px">
+      <div class="card pad">
+        <div class="dh"><div style="flex:1"><div class="mono muted" style="font-size:12px">${esc(req.ref)}</div><h2>${esc(req.title)}</h2><div class="muted" style="font-size:13px;margin-top:4px">${esc(T(CATEGORIES[req.category].label))} · ${fmtDate(req.created_at?new Date(req.created_at).getTime():req.events[0].at)}</div></div>${statusPill(req.status)}</div>
+      </div>
+      <div class="card pad stack" style="margin-top:16px">
+        <div class="sechead"><h2 style="font-size:16px">${esc(t('conversation_quote'))}</h2></div>
+        <div id="cthread">${threadHTML(req,true)}</div>
+        <hr class="divider">
+        <div class="stack" style="gap:8px">
+          <textarea id="cmsg" placeholder="${esc(t('reply_ph'))}"></textarea>
+          <div class="btnrow">
+            <label class="btn sm">${I.file} ${esc(t('attach'))}<input type="file" id="cattach" multiple hidden></label>
+            <span id="cattnames" class="hint"></span><div style="flex:1"></div>
+            <button class="btn primary sm" id="csend">${esc(t('send'))} ${I.send}</button>
+          </div>
+        </div>
+      </div>
+      <div class="card pad stack" style="margin-top:16px">
+        <div class="sechead"><h2 style="font-size:16px">${esc(t('your_details'))}</h2></div>
+        ${fieldSummary(req)}
+        ${req.description?`<div><div class="lab" style="font-size:12px;color:var(--muted);margin-bottom:4px">${esc(t('description_label'))}</div><p style="white-space:pre-wrap">${esc(req.description)}</p></div>`:''}
+        ${mouldTable(req)}
+        ${(req.attachments||[]).length?`<div><div class="lab" style="font-size:12px;color:var(--muted);margin-bottom:6px">${esc(t('attachments'))}</div><div class="attlist">${req.attachments.map(attRow).join('')}</div></div>`:''}
+      </div>
+      <div class="card pad stack" style="margin-top:16px">
+        <div class="sechead"><h2 style="font-size:16px">${esc(t('progress'))}</h2></div>
+        ${timelineHTML(req)}
+      </div>
+    </div>
+  </div>`);
+}
+
+/* ---------- Admin ---------- */
+function vAdmin(){
+  const reqs=S.list;
+  const need=reqs.filter(r=>['submitted','under_review','info_needed'].includes(r.status)).length;
+  const quoted=reqs.filter(r=>r.status==='quoted').length;
+  const prod=reqs.filter(r=>['approved','design','manufacturing','trial'].includes(r.status)).length;
+  const sel=S.current;
+  return shell(`<div class="wrap">
+    <div class="statrow">
+      <div class="stat"><div class="v tnum">${reqs.length}</div><div class="k">${esc(t('stat_total'))}</div></div>
+      <div class="stat act"><div class="v tnum">${need}</div><div class="k">${esc(t('stat_action'))}</div></div>
+      <div class="stat"><div class="v tnum">${quoted}</div><div class="k">${esc(t('stat_awaiting'))}</div></div>
+      <div class="stat"><div class="v tnum">${prod}</div><div class="k">${esc(t('stat_inprod'))}</div></div>
+    </div>
+    <div class="console">
+      <div>
+        <div class="listtools">
+          <input id="q" placeholder="${esc(t('search_ph'))}" value="${esc(S.q)}">
+          <select id="fstatus" style="width:auto">
+            <option value="">${esc(t('filter_all'))}</option>
+            <option value="__action" ${S.filter==='__action'?'selected':''}>${esc(t('filter_action'))}</option>
+            ${STATUSES.map(s=>`<option value="${s.key}" ${S.filter===s.key?'selected':''}>${esc(T(s.label))}</option>`).join('')}
+          </select>
+        </div>
+        <div class="reqlist" id="reqlist">${adminListHTML()}</div>
+      </div>
+      <div id="detailpane">${sel?adminDetail(sel):adminEmpty()}</div>
+    </div>
+  </div>`);
+}
+function adminEmpty(){ return `<div class="card"><div class="empty">${I.box}<div>${esc(S.list.length?t('select_prompt'):t('none_yet'))}</div></div></div>`; }
+function adminListHTML(){
+  const q=S.q.toLowerCase(), f=S.filter; let reqs=S.list.slice();
+  if(f==='__action') reqs=reqs.filter(r=>['submitted','under_review','info_needed'].includes(r.status));
+  else if(f) reqs=reqs.filter(r=>r.status===f);
+  if(q) reqs=reqs.filter(r=>(r.ref+' '+r.title+' '+(r.client.name||'')+' '+(r.client.company||'')).toLowerCase().includes(q));
+  if(!reqs.length) return `<div class="empty" style="padding:30px">${esc(S.list.length?t('no_match'):t('none_yet'))}</div>`;
+  return reqs.map(r=>{
+    const s=statusOf(r.status);
+    const prioPill = r.priority==='Urgent'?`<span class="pill red"><span class="d"></span>${esc(T(PRIORITIES[2]))}</span>`:(r.priority==='High'?`<span class="pill amber"><span class="d"></span>${esc(T(PRIORITIES[1]))}</span>`:'');
+    return `<div class="reqcard s-${s.tone} ${S.reqId===r.id?'sel':''}" data-id="${r.id}"><div class="top">${statusPill(r.status)} ${prioPill}</div><div class="ti">${esc(r.title)}</div><div class="meta"><span class="mono">${esc(r.ref)}</span><span>${esc(r.client.company||r.client.name)}</span><span>${ago(r.createdAt)}</span></div></div>`;
+  }).join('');
+}
+function adminDetail(req){
+  const tab=S.tab||'overview', cat=CATEGORIES[req.category];
+  const clientMsgs=(req.events||[]).filter(e=>e.kind==='message'&&e.role==='client').length;
+  const Tb=(k,l,b)=>`<div class="tab ${tab===k?'on':''}" data-tab="${k}">${esc(l)}${b?` <span class="badge-count">${b}</span>`:''}</div>`;
+  let body='';
+  if(tab==='overview'){
+    body=`<div class="stack">
+      <dl class="kv">
+        <dt>${esc(t('ov_customer'))}</dt><dd>${esc(req.client.name)}${req.client.company?` · ${esc(req.client.company)}`:''}</dd>
+        <dt>${esc(t('email'))}</dt><dd><a href="mailto:${esc(req.client.email)}">${esc(req.client.email)}</a>${req.client.phone?` · ${esc(req.client.phone)}`:''}</dd>
+        <dt>${esc(t('ov_type'))}</dt><dd>${esc(T(cat.label))}</dd>
+        <dt>${esc(t('ov_submitted'))}</dt><dd>${fmtDT(new Date(req.created_at).getTime())}</dd>
+        <dt>${esc(t('ov_group'))}</dt><dd>${req.group?esc(T(GROUPS.find(g=>g.v===req.group)||req.group)):`<span class="muted">${esc(t('not_classified'))}</span>`}</dd>
+        <dt>${esc(t('ov_priority'))}</dt><dd>${esc(T(PRIORITIES.find(p=>p.v===req.priority)||{en:req.priority}))}</dd>
+      </dl><hr class="divider">${fieldSummary(req)}
+      ${req.description?`<div><div class="lab" style="font-size:12px;color:var(--muted);margin-bottom:4px">${esc(t('description_label'))}</div><p style="white-space:pre-wrap">${esc(req.description)}</p></div>`:''}
+      ${(req.attachments||[]).length?`<div><div class="lab" style="font-size:12px;color:var(--muted);margin-bottom:6px">${esc(t('attachments'))}</div><div class="attlist">${req.attachments.map(attRow).join('')}</div></div>`:''}
+    </div>`;
+  } else if(tab==='moulds'){ body = cat.perItem? (mouldTable(req)||`<p class="muted">${esc(t('no_moulds'))}</p>`) : `<p class="muted">${esc(t('no_permould'))}</p>`; }
+  else if(tab==='thread'){
+    body=`<div class="stack">${threadHTML(req,false)}<hr class="divider"><div class="stack" style="gap:8px">
+      <textarea id="amsg" placeholder="${esc(t('msg_to_customer_ph'))}"></textarea>
+      <div class="btnrow"><label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer"><input type="checkbox" id="ainternal" style="width:auto"> ${esc(t('internal_note'))}</label><div style="flex:1"></div><button class="btn primary sm" id="asend">${esc(t('send'))} ${I.send}</button></div>
+    </div></div>`;
+  } else if(tab==='quote'){
+    const existing=(req.quotes||[]).length?`<div class="stack" style="margin-bottom:18px">${req.quotes.map(q=>quoteCard(req,q,false)).join('')}</div>`:'';
+    body=`${existing}<div class="card pad stack" style="background:var(--surface-2)"><div class="sechead"><h2 style="font-size:15px">${esc(t('new_quotation'))}</h2></div>
+      <div class="grid3">
+        <label class="fld"><span class="lab">${esc(t('amount'))}</span><input id="q_amt" placeholder="25,000"></label>
+        <label class="fld"><span class="lab">${esc(t('currency'))}</span><select id="q_cur"><option>USD</option><option>EUR</option><option>CNY</option><option>GBP</option><option>RUB</option></select></label>
+        <label class="fld"><span class="lab">${esc(t('lead_time'))}</span><input id="q_lead" placeholder="8 weeks / 8 недель / 8周"></label>
+        <label class="fld"><span class="lab">${esc(t('validity'))}</span><input id="q_val" placeholder="30 days"></label>
+        <label class="fld"><span class="lab">${esc(t('incoterm'))}</span><input id="q_inc" placeholder="FOB / EXW / DDP"></label>
+      </div>
+      <label class="fld"><span class="lab">${esc(t('notes_to_customer'))}</span><textarea id="q_notes" placeholder="${esc(t('notes_ph'))}"></textarea></label>
+      <div class="btnrow"><button class="btn primary sm" id="qsend">${esc(t('send_quote'))}</button></div></div>`;
+  } else if(tab==='manage'){
+    body=`<div class="stack">
+      <div class="card pad stack" style="background:var(--surface-2)"><div class="sechead"><h2 style="font-size:15px">${esc(t('classify_head'))}</h2></div>
+        <div class="grid2">
+          <label class="fld"><span class="lab">${esc(t('group'))}</span><select id="m_group">${GROUPS.map(g=>`<option value="${esc(g.v)}" ${req.group===g.v?'selected':''}>${esc(T(g))}</option>`).join('')}</select></label>
+          <label class="fld"><span class="lab">${esc(t('priority'))}</span><select id="m_prio">${PRIORITIES.map(p=>`<option value="${esc(p.v)}" ${req.priority===p.v?'selected':''}>${esc(T(p))}</option>`).join('')}</select></label>
+        </div>
+        <label class="fld"><span class="lab">${esc(t('note_optional'))}</span><input id="m_cnote" placeholder="${esc(t('note_ph_class'))}"></label>
+        <div class="btnrow"><button class="btn sm primary" id="clsbtn">${esc(t('save_classification'))}</button></div>
+      </div>
+      <div class="card pad stack" style="background:var(--surface-2)"><div class="sechead"><h2 style="font-size:15px">${esc(t('advance_status'))}</h2></div>
+        <div class="secsub" style="margin:0">${esc(t('current'))}: ${statusPill(req.status)}</div>
+        <div class="grid2">
+          <label class="fld"><span class="lab">${esc(t('set_status'))}</span><select id="m_status">${STATUSES.map(s=>`<option value="${s.key}" ${req.status===s.key?'selected':''}>${esc(T(s.phase))} · ${esc(T(s.label))}</option>`).join('')}</select></label>
+          <label class="fld"><span class="lab">${esc(t('note_timeline'))}</span><input id="m_snote" placeholder="${esc(t('note_ph_status'))}"></label>
+        </div>
+        <div class="btnrow"><button class="btn sm primary" id="stbtn">${esc(t('update_status'))}</button></div>
+      </div>
+    </div>`;
+  } else if(tab==='timeline'){ body=timelineHTML(req); }
+  return `<div class="card pad detail">
+    <div class="dh"><div style="flex:1"><div class="mono muted" style="font-size:12px">${esc(req.ref)}</div><h2>${esc(req.title)}</h2><div class="muted" style="font-size:13px;margin-top:4px">${esc(req.client.name)}${req.client.company?' · '+esc(req.client.company):''}</div></div>
+      <div class="stack" style="gap:8px;align-items:flex-end">${statusPill(req.status)}<a class="btn ghost sm" href="mailto:${esc(req.client.email)}">${esc(t('email_customer'))}</a></div></div>
+    <div class="tabs">${Tb('overview',t('tab_overview'))}${cat.perItem?Tb('moulds',t('tab_moulds')):''}${Tb('thread',t('tab_thread'),clientMsgs||'')}${Tb('quote',t('tab_quote'),(req.quotes||[]).length||'')}${Tb('manage',t('tab_manage'))}${Tb('timeline',t('tab_timeline'))}</div>
+    <div id="tabbody">${body}</div>
+  </div>`;
+}
+
+/* ============================ Render + bind ============================ */
+function render(){
+  const app=document.getElementById('app');
+  let html;
+  switch(S.view){
+    case 'client_new': html=vClientNew(); break;
+    case 'client_form': html=vClientForm(); break;
+    case 'client_done': html=vClientDone(); break;
+    case 'client_track': html=vClientTrack(); break;
+    case 'client_detail': html=vClientDetail(); break;
+    case 'admin': html=vAdmin(); break;
+    default: html=vLanding();
+  }
+  app.innerHTML=html;
+  bindGlobal(); bindView(); window.scrollTo(0,0);
+}
+function bindGlobal(){
+  $$('[data-lang]').forEach(b=>b.addEventListener('click',()=>{ L=b.dataset.lang; try{localStorage.setItem('sprue_lang',L);}catch(e){} document.documentElement.lang=L; render(); }));
+  const home=$('[data-home]'); if(home) home.addEventListener('click',()=>go('landing'));
+  const lo=$('[data-logout]'); if(lo) lo.addEventListener('click',(e)=>{ e.stopPropagation(); clearToken(); S.role=null; go('landing'); });
+  $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
+  const ad=$('[data-admin]'); if(ad) ad.addEventListener('click',adminEntry);
+}
+function go(v){
+  if(v==='landing'){ S.role=null; S.current=null; S.reqId=null; }
+  if(v==='client_form'){ S.role='client'; if(!S.draft) S.draft=newDraft(); }
+  if(v==='client_new'){ S.role='client'; }
+  S.view=v; render();
+}
+function bindView(){
+  const app=document.getElementById('app');
+  if(S.view==='client_form') mountClientForm(app);
+  if(S.view==='client_done'){ const b=$('[data-track-now]'); if(b) b.addEventListener('click',()=>{ S.view='client_track'; render(); setTimeout(doTrack,0); }); }
+  if(S.view==='client_track'){ const b=$('#trackbtn'); if(b) b.addEventListener('click',doTrack); ['tref','temail'].forEach(id=>{ const e=$('#'+id); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doTrack(); }); }); }
+  if(S.view==='client_detail') bindClientDetail(app);
+  if(S.view==='admin') bindAdmin(app);
+}
+function bindClientDetail(app){
+  const ca=$('#cattach',app);
+  if(ca) ca.addEventListener('change',()=>{ S.composeAtts=[...ca.files]; $('#cattnames',app).textContent=S.composeAtts.length? S.composeAtts.length+' '+t('files_selected'):''; });
+  const send=$('#csend',app); if(send) send.addEventListener('click',clientSendMsg);
+  $$('[data-quoteresp]',app).forEach(b=>b.addEventListener('click',()=>clientQuoteResp(b.dataset.qid,b.dataset.quoteresp)));
+}
+async function clientSendMsg(){
+  const ta=$('#cmsg'); const text=ta.value.trim();
+  if(!text && !S.composeAtts.length){ toast(t('write_message')); return; }
+  const btn=$('#csend'); btn.disabled=true;
+  try{
+    let atts=[]; if(S.composeAtts.length) atts=await uploadFiles(S.composeAtts);
+    const r=await api('/api/track/message',{method:'POST',body:JSON.stringify({...S.clientCreds,text,atts})});
+    S.tracked=r.request; S.composeAtts=[]; render(); toast(t('sent_to_team'));
+  }catch(e){ btn.disabled=false; toast(t('network_error')); }
+}
+async function clientQuoteResp(qid,decision){
+  try{ const r=await api('/api/track/quote-response',{method:'POST',body:JSON.stringify({...S.clientCreds,quoteId:qid,decision})}); S.tracked=r.request; render(); toast(decision==='accepted'?t('st_accepted'):t('st_declined')); }
+  catch(e){ toast(t('network_error')); }
+}
+function bindAdmin(app){
+  $$('#reqlist [data-id]',app).forEach(c=>c.addEventListener('click',()=>openReq(c.dataset.id)));
+  const q=$('#q',app); if(q) q.addEventListener('input',()=>{ S.q=q.value; $('#reqlist',app).innerHTML=adminListHTML(); bindAdmin(app); });
+  const fs=$('#fstatus',app); if(fs) fs.addEventListener('change',()=>{ S.filter=fs.value; $('#reqlist',app).innerHTML=adminListHTML(); bindAdmin(app); });
+  $$('#detailpane [data-tab]',app).forEach(tb=>tb.addEventListener('click',()=>{ S.tab=tb.dataset.tab; $('#detailpane',app).innerHTML=adminDetail(S.current); bindAdmin(app); }));
+  bindAdminActions(app);
+}
+function bindAdminActions(app){
+  const on=(id,fn)=>{ const e=$('#'+id,app); if(e) e.addEventListener('click',fn); };
+  on('asend',adminSendMsg); on('qsend',adminSendQuote); on('clsbtn',adminClassify); on('stbtn',adminSetStatus);
+}
+async function openReq(id){
+  S.reqId=id; S.tab='overview';
+  try{ const r=await api('/api/admin/requests/'+id,{auth:true}); S.current=r.request; render(); }
+  catch(e){ handleAdminErr(e); }
+}
+async function refreshAfter(updated){
+  S.current=updated;
+  // update list entry counts/status
+  const li=S.list.find(x=>x.id===updated.id);
+  if(li){ li.status=updated.status; li.priority=updated.priority; li.group=updated.group; }
+  render();
+}
+async function adminSendMsg(){
+  const text=$('#amsg').value.trim(); const internal=$('#ainternal').checked;
+  if(!text){ toast(t('write_message')); return; }
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/message',{method:'POST',auth:true,body:JSON.stringify({text,internal})}); S.tab='thread'; refreshAfter(r.request); toast(internal?t('internal_saved'):t('sent_customer')); }
+  catch(e){ handleAdminErr(e); }
+}
+async function adminSendQuote(){
+  const amount=$('#q_amt').value.trim(); if(!amount){ toast(t('enter_amount')); return; }
+  const body={amount,currency:$('#q_cur').value,leadTime:$('#q_lead').value.trim(),validity:$('#q_val').value.trim(),incoterm:$('#q_inc').value.trim(),notes:$('#q_notes').value.trim()};
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/quote',{method:'POST',auth:true,body:JSON.stringify(body)}); S.tab='quote'; refreshAfter(r.request); toast(t('quote_sent')); }
+  catch(e){ handleAdminErr(e); }
+}
+async function adminClassify(){
+  const status = S.current.status==='submitted'?'classified':undefined;
+  const body={group:$('#m_group').value,priority:$('#m_prio').value,note:$('#m_cnote').value.trim(),status};
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/classify',{method:'POST',auth:true,body:JSON.stringify(body)}); S.tab='manage'; refreshAfter(r.request); toast(t('classified_ok')); }
+  catch(e){ handleAdminErr(e); }
+}
+async function adminSetStatus(){
+  const body={status:$('#m_status').value,note:$('#m_snote').value.trim()};
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/status',{method:'POST',auth:true,body:JSON.stringify(body)}); S.tab='manage'; refreshAfter(r.request); toast(t('status_updated')); }
+  catch(e){ handleAdminErr(e); }
+}
+function handleAdminErr(e){ if(e&&e.code==='unauthorized'){ S.role=null; toast(t('session_expired')); go('landing'); } else toast(t('network_error')); }
+
+/* ---------- Admin entry / login ---------- */
+async function adminEntry(){
+  if(TOKEN){ try{ const r=await api('/api/admin/requests',{auth:true}); S.list=r.requests; S.role='admin'; S.view='admin'; render(); return; } catch(e){ clearToken(); } }
+  openLogin();
+}
+function openLogin(){
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" id="mbg"><div class="modal">
+    <h3>${esc(t('login_head'))}</h3><p class="muted" style="font-size:13.5px;margin-bottom:14px">${esc(t('login_sub'))}</p>
+    <label class="fld"><span class="lab">${esc(t('passcode'))}</span><input id="alog" type="password"></label>
+    <div id="alogerr" class="hint" style="color:var(--red);margin-top:6px"></div>
+    <div class="btnrow" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="lcancel">${esc(t('cancel'))}</button><button class="btn primary" id="ldo">${esc(t('enter'))}</button></div>
+  </div></div>`;
+  const close=()=>document.getElementById('modal-root').innerHTML='';
+  $('#mbg').addEventListener('click',e=>{ if(e.target.id==='mbg') close(); });
+  $('#lcancel').addEventListener('click',close);
+  const doLogin=async()=>{
+    const pass=$('#alog').value;
+    try{ const r=await api('/api/admin/login',{method:'POST',body:JSON.stringify({passcode:pass})}); setToken(r.token); close(); const l=await api('/api/admin/requests',{auth:true}); S.list=l.requests; S.role='admin'; S.view='admin'; render(); }
+    catch(e){ $('#alogerr').textContent=t('wrong_passcode'); }
+  };
+  $('#ldo').addEventListener('click',doLogin);
+  $('#alog').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  setTimeout(()=>{ const el=$('#alog'); if(el) el.focus(); },50);
+}
+
+/* ============================ Boot ============================ */
+document.documentElement.lang=L;
+render();
+})();
+</script>
+</body>
+</html>
