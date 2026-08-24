@@ -122,7 +122,10 @@ async function getByRef(ref) {
  *  CUSTOMER ACCOUNTS — register / login / profile
  * ============================================================ */
 const publicLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40 });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 80, standardHeaders: true, legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ error: 'rate_limited' }),
+});
 const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 120 });
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -172,11 +175,14 @@ app.post('/api/auth/register', authLimiter, wrap(async (req, res) => {
 app.post('/api/auth/login', authLimiter, wrap(async (req, res) => {
   const email = String((req.body || {}).email || '').trim().toLowerCase();
   const password = String((req.body || {}).password || '');
-  const { data } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+  const { data, error } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+  if (error) throw error;
   const c = data && data[0];
-  if (!c || !(await bcrypt.compare(password, c.password_hash))) {
-    return res.status(401).json({ error: 'bad_credentials' });
+  let ok = false;
+  if (c && typeof c.password_hash === 'string' && c.password_hash.length) {
+    try { ok = await bcrypt.compare(password, c.password_hash); } catch (_) { ok = false; }
   }
+  if (!ok) return res.status(401).json({ error: 'bad_credentials' });
   res.json({ token: signCustomerToken(c), customer: publicProfile(c) });
 }));
 

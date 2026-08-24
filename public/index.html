@@ -330,6 +330,8 @@ const UI = {
   err_weak_password:{en:'Password must be at least 6 characters.',ru:'Пароль должен быть не менее 6 символов.',zh:'密码至少需要6个字符。'},
   err_bad_email:{en:'Please enter a valid email.',ru:'Введите корректный email.',zh:'请输入有效的邮箱。'},
   err_name_required:{en:'Please enter your name.',ru:'Укажите ваше имя.',zh:'请输入您的姓名。'},
+  err_rate_limited:{en:'Too many attempts — please wait a minute and try again.',ru:'Слишком много попыток — подождите минуту и попробуйте снова.',zh:'尝试次数过多 — 请稍等一分钟后重试。'},
+  err_server:{en:'Server error — please try again in a moment.',ru:'Ошибка сервера — попробуйте через минуту.',zh:'服务器错误 — 请稍后重试。'},
   logout:{en:'Sign out',ru:'Выйти',zh:'退出'},
   // --- dashboard ---
   greeting:{en:'Welcome',ru:'Здравствуйте',zh:'欢迎'},
@@ -1148,6 +1150,8 @@ async function doAuth(){
     else if(code==='weak_password') err.textContent=t('err_weak_password');
     else if(code==='bad_email') err.textContent=t('err_bad_email');
     else if(code==='name_required') err.textContent=t('err_name_required');
+    else if(code==='rate_limited') err.textContent=t('err_rate_limited');
+    else if(code==='server_error') err.textContent=t('err_server');
     else err.textContent=t('network_error');
   }
 }
