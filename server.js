@@ -290,7 +290,10 @@ async function ensureBucket() {
   } catch (e) { console.warn('[storage] bucket check skipped:', e.message); }
 }
 
-(async () => {
-  await ensureBucket();
-  app.listen(PORT, () => console.log(`Sprue portal listening on :${PORT}`));
-})();
+// Start listening IMMEDIATELY so Railway's health check passes, then set up
+// the storage bucket in the background (a slow/failed Supabase call must never
+// delay the port from opening).
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Sprue portal listening on :${PORT}`);
+  ensureBucket();
+});
