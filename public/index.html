@@ -314,6 +314,35 @@ const UI = {
   loading:{en:'Loading…',ru:'Загрузка…',zh:'加载中…'},
   home:{en:'Home',ru:'Главная',zh:'首页'},
   back:{en:'Back',ru:'Назад',zh:'返回'},
+  // --- auth / accounts ---
+  auth_welcome:{en:'Customer portal',ru:'Портал заказчика',zh:'客户门户'},
+  auth_lede:{en:'Sign in to submit mould enquiries and track your quotations and projects.',ru:'Войдите, чтобы отправлять заявки на пресс-формы и отслеживать расчёты и проекты.',zh:'登录以提交模具询价并跟踪您的报价和项目。'},
+  tab_login:{en:'Sign in',ru:'Вход',zh:'登录'},
+  tab_register:{en:'Create account',ru:'Регистрация',zh:'注册'},
+  password:{en:'Password',ru:'Пароль',zh:'密码'},
+  password_ph:{en:'At least 6 characters',ru:'Не менее 6 символов',zh:'至少6个字符'},
+  login_btn:{en:'Sign in',ru:'Войти',zh:'登录'},
+  register_btn:{en:'Create account',ru:'Создать аккаунт',zh:'创建账户'},
+  no_account:{en:'New customer?',ru:'Новый заказчик?',zh:'新客户？'},
+  have_account:{en:'Already have an account?',ru:'Уже есть аккаунт?',zh:'已有账户？'},
+  err_bad_credentials:{en:'Wrong email or password.',ru:'Неверный email или пароль.',zh:'邮箱或密码错误。'},
+  err_email_taken:{en:'An account with this email already exists.',ru:'Аккаунт с таким email уже существует.',zh:'该邮箱已被注册。'},
+  err_weak_password:{en:'Password must be at least 6 characters.',ru:'Пароль должен быть не менее 6 символов.',zh:'密码至少需要6个字符。'},
+  err_bad_email:{en:'Please enter a valid email.',ru:'Введите корректный email.',zh:'请输入有效的邮箱。'},
+  err_name_required:{en:'Please enter your name.',ru:'Укажите ваше имя.',zh:'请输入您的姓名。'},
+  logout:{en:'Sign out',ru:'Выйти',zh:'退出'},
+  // --- dashboard ---
+  greeting:{en:'Welcome',ru:'Здравствуйте',zh:'欢迎'},
+  my_requests:{en:'My requests',ru:'Мои заявки',zh:'我的请求'},
+  new_request_btn:{en:'New request',ru:'Новая заявка',zh:'新建请求'},
+  dash_empty_title:{en:'No requests yet',ru:'Заявок пока нет',zh:'暂无请求'},
+  dash_empty_desc:{en:'Submit your first mould enquiry — pick a product type and fill a short questionnaire.',ru:'Отправьте первую заявку — выберите тип продукта и заполните короткую анкету.',zh:'提交您的第一个模具询价 — 选择产品类型并填写简短问卷。'},
+  open:{en:'Open',ru:'Открыть',zh:'打开'},
+  updated:{en:'updated',ru:'обновлено',zh:'更新于'},
+  // --- admin page ---
+  admin_page_title:{en:'Team sign-in',ru:'Вход для команды',zh:'团队登录'},
+  admin_page_sub:{en:'Enter the team passcode to open the admin console.',ru:'Введите пароль команды, чтобы открыть консоль.',zh:'输入团队密码以打开管理控制台。'},
+  back_to_portal:{en:'Back to customer portal',ru:'К порталу заказчика',zh:'返回客户门户'},
   rfq_eyebrow:{en:'Request for quotation',ru:'Запрос на расчёт',zh:'询价请求'},
   hero_title:{en:'Send us your mould enquiry — track it to shipment.',ru:'Отправьте заявку на пресс-форму — отслеживайте её до отгрузки.',zh:'提交您的模具需求 — 全程跟踪至发货。'},
   hero_lede:{en:'Submit a structured request for injection tooling, moulded parts or toolroom work. Attach drawings, get a quotation, and follow every step from DFM through trial, delivery and aftersales in one place.',ru:'Оформите структурированную заявку на пресс-формы, литьевые детали или ремонт оснастки. Приложите чертежи, получите расчёт и отслеживайте каждый этап — от DFM до испытаний, поставки и обслуживания.',zh:'为注塑模具、注塑零件或模房工作提交结构化请求。上传图纸、获取报价，并在一处跟踪从 DFM 到试模、交付和售后的每一步。'},
@@ -596,32 +625,36 @@ function dispField(f, v){
 function dispOne(f, x){ const o=f.options.find(o=>optVal(o)===x); return o? optLabel(o) : x; }
 
 /* ============================ API ============================ */
-let TOKEN = null;
-try{ TOKEN = localStorage.getItem('sprue_admin_token'); }catch(e){}
+let ADMIN_TOKEN=null, CUST_TOKEN=null;
+try{ ADMIN_TOKEN=localStorage.getItem('sprue_admin_token'); }catch(e){}
+try{ CUST_TOKEN=localStorage.getItem('sprue_cust_token'); }catch(e){}
+function setAdminToken(tk){ ADMIN_TOKEN=tk; try{localStorage.setItem('sprue_admin_token',tk);}catch(e){} }
+function clearAdminToken(){ ADMIN_TOKEN=null; try{localStorage.removeItem('sprue_admin_token');}catch(e){} }
+function setCustToken(tk){ CUST_TOKEN=tk; try{localStorage.setItem('sprue_cust_token',tk);}catch(e){} }
+function clearCustToken(){ CUST_TOKEN=null; try{localStorage.removeItem('sprue_cust_token');}catch(e){} }
 async function api(pathname, opts){
   opts = opts||{};
   const headers = opts.headers || {};
   if(!opts.raw){ headers['Content-Type']='application/json'; }
-  if(opts.auth && TOKEN){ headers['Authorization']='Bearer '+TOKEN; }
+  const tk = opts.auth==='admin'?ADMIN_TOKEN : opts.auth==='customer'?CUST_TOKEN : null;
+  if(opts.auth && tk){ headers['Authorization']='Bearer '+tk; }
   const res = await fetch(pathname, {method:opts.method||'GET', headers, body:opts.body});
-  if(res.status===401 && opts.auth){ clearToken(); throw {code:'unauthorized'}; }
+  if(res.status===401 && opts.auth){ if(opts.auth==='admin') clearAdminToken(); else clearCustToken(); throw {code:'unauthorized'}; }
   let data=null; try{ data=await res.json(); }catch(e){}
   if(!res.ok){ throw (data||{code:'http_'+res.status}); }
   return data;
 }
-function setToken(tk){ TOKEN=tk; try{ localStorage.setItem('sprue_admin_token',tk);}catch(e){} }
-function clearToken(){ TOKEN=null; try{ localStorage.removeItem('sprue_admin_token');}catch(e){} }
 async function uploadFiles(fileList){
   const files=[...fileList].filter(f=>{ if(f.size>20*1024*1024){ toast(f.name+' '+t('file_too_large')); return false;} return true; });
   if(!files.length) return [];
   const fd=new FormData(); files.forEach(f=>fd.append('files',f));
-  const r=await api('/api/uploads',{method:'POST',raw:true,body:fd});
+  const r=await api('/api/uploads',{method:'POST',raw:true,auth:'customer',body:fd});
   return r.attachments||[];
 }
 
 /* ============================ State ============================ */
-const S = { view:'landing', role:null, draft:null, clientCreds:null, tracked:null,
-  list:[], current:null, reqId:null, tab:'overview', q:'', filter:'', composeAtts:[] };
+const S = { area:'customer', view:'auth', authTab:'login', me:null, adminIn:false,
+  draft:null, current:null, list:[], reqId:null, tab:'overview', q:'', filter:'', composeAtts:[] };
 
 /* ============================ Utils ============================ */
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -658,8 +691,8 @@ function langSwitch(){
   return `<div class="langsw">`+LANGS.map(([code,lab])=>`<button data-lang="${code}" class="${L===code?'on':''}">${lab}</button>`).join('')+`</div>`;
 }
 function roleBadge(){
-  if(S.role==='admin') return `<span class="rolebadge admin"><span class="dot"></span>${esc(t('admin_badge'))}<span class="lo" data-logout title="${esc(t('logout'))}">${I.x}</span></span>`;
-  if(S.role==='client') return `<span class="rolebadge"><span class="dot"></span>${esc(t('client_badge'))}</span>`;
+  if(S.area==='admin' && S.adminIn) return `<span class="rolebadge admin"><span class="dot"></span>${esc(t('admin_badge'))}<span class="lo" data-logout-admin title="${esc(t('logout'))}">${I.x}</span></span>`;
+  if(S.area==='customer' && S.me) return `<span class="rolebadge"><span class="dot"></span>${esc(S.me.name)}<span class="lo" data-logout-cust title="${esc(t('logout'))}">${I.x}</span></span>`;
   return '';
 }
 function shell(inner){
@@ -674,32 +707,74 @@ function shell(inner){
 }
 
 /* ============================ Views ============================ */
-function vLanding(){
-  return shell(`<div class="wrap">
-    <div class="hero">
-      <div class="eyebrow">${esc(t('rfq_eyebrow'))}</div>
-      <h1>${esc(t('hero_title'))}</h1>
-      <p class="lede">${esc(t('hero_lede'))}</p>
+/* ---------- Customer auth (main page) ---------- */
+function vAuth(){
+  const isLogin = S.authTab!=='register';
+  return shell(`<div class="wrap narrow" style="max-width:460px">
+    <div class="hero" style="padding:26px 0 6px">
+      <div class="eyebrow">${esc(t('auth_welcome'))}</div>
+      <h1 style="font-size:26px">${esc(t('hero_title'))}</h1>
+      <p class="lede" style="font-size:15px">${esc(t('auth_lede'))}</p>
     </div>
-    <div class="pathgrid">
-      <div class="path" data-go="client_new">
-        <div class="ic">${I.client}</div><h3>${esc(t('cust_title'))}</h3><p>${esc(t('cust_desc'))}</p>
-        <span class="go">${esc(t('cust_go'))} ${I.arrow}</span>
+    <div class="card pad stack" style="margin-top:18px">
+      <div class="tabs" style="margin:0 0 4px">
+        <div class="tab ${isLogin?'on':''}" data-authtab="login">${esc(t('tab_login'))}</div>
+        <div class="tab ${!isLogin?'on':''}" data-authtab="register">${esc(t('tab_register'))}</div>
       </div>
-      <div class="path" data-admin>
-        <div class="ic">${I.admin}</div><h3>${esc(t('team_title'))}</h3><p>${esc(t('team_desc'))}</p>
-        <span class="go">${esc(t('team_go'))} ${I.arrow}</span>
-      </div>
+      <form id="authform" class="stack" style="gap:13px" onsubmit="return false">
+        ${isLogin?'':`
+          <label class="fld"><span class="lab">${esc(t('contact_name'))} <span class="req">*</span></span><input id="a_name" placeholder="${esc(t('ph_fullname'))}"></label>
+          <label class="fld"><span class="lab">${esc(t('company'))}</span><input id="a_company" placeholder="${esc(t('ph_company'))}"></label>
+          <label class="fld"><span class="lab">${esc(t('phone'))}</span><input id="a_phone" type="tel" placeholder="${esc(t('optional'))}"></label>`}
+        <label class="fld"><span class="lab">${esc(t('email'))} <span class="req">*</span></span><input id="a_email" type="email" placeholder="${esc(t('ph_email'))}"></label>
+        <label class="fld"><span class="lab">${esc(t('password'))} <span class="req">*</span></span><input id="a_pass" type="password" placeholder="${esc(isLogin?t('password'):t('password_ph'))}"></label>
+        <div id="autherr" class="hint" style="color:var(--red)"></div>
+        <button class="btn primary" id="authbtn">${esc(isLogin?t('login_btn'):t('register_btn'))} ${I.arrow}</button>
+      </form>
     </div>
-    <div style="margin-top:22px" class="toolnote">${I.info}<span>${esc(t('landing_note'))}</span></div>
+    <div class="toolnote" style="margin-top:16px;justify-content:center">${I.info}<span>${esc(isLogin?t('no_account'):t('have_account'))} <a href="#" data-authtab="${isLogin?'register':'login'}" style="font-weight:500">${esc(isLogin?t('tab_register'):t('tab_login'))}</a></span></div>
   </div>`);
 }
-function vClientNew(){
-  return shell(`<div class="wrap narrow">
-    <button class="btn ghost sm" data-go="landing">${I.back} ${esc(t('home'))}</button>
-    <div class="pathgrid" style="margin-top:14px">
-      <div class="path" data-go="client_form"><div class="ic">${I.plus}</div><h3>${esc(t('new_title'))}</h3><p>${esc(t('new_desc'))}</p><span class="go">${esc(t('start'))} ${I.arrow}</span></div>
-      <div class="path" data-go="client_track"><div class="ic">${I.client}</div><h3>${esc(t('track_title'))}</h3><p>${esc(t('track_desc'))}</p><span class="go">${esc(t('lookup'))} ${I.arrow}</span></div>
+/* ---------- Customer dashboard ---------- */
+function vDashboard(){
+  const reqs=S.list||[];
+  const cards = reqs.length ? reqs.map(dashCard).join('') : `
+    <div class="card"><div class="empty">${I.box}
+      <div style="font-weight:600;color:var(--ink);font-size:16px;margin-bottom:4px">${esc(t('dash_empty_title'))}</div>
+      <div style="max-width:42ch;margin:0 auto">${esc(t('dash_empty_desc'))}</div>
+      <div style="margin-top:16px"><button class="btn primary" data-go="new">${I.plus} ${esc(t('new_request_btn'))}</button></div>
+    </div></div>`;
+  return shell(`<div class="wrap">
+    <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+      <div style="flex:1">
+        <div class="eyebrow">${esc(t('greeting'))}, ${esc((S.me&&S.me.name)||'')}</div>
+        <h1 style="font-size:24px;margin-top:6px">${esc(t('my_requests'))}</h1>
+      </div>
+      ${reqs.length?`<button class="btn primary" data-go="new">${I.plus} ${esc(t('new_request_btn'))}</button>`:''}
+    </div>
+    <div class="stack" style="gap:11px">${cards}</div>
+  </div>`);
+}
+function dashCard(r){
+  const s=statusOf(r.status);
+  const un = r.adminMsgCount? `<span class="badge-count">${r.adminMsgCount}</span>`:'';
+  return `<div class="reqcard s-${s.tone}" data-open="${r.id}" style="padding:15px 16px 15px 20px">
+    <div class="top">${statusPill(r.status)} ${(r.quoteCount?`<span class="pill amber"><span class="d"></span>${esc(t('quotation'))} ${un}</span>`:'')}</div>
+    <div class="ti" style="font-size:15px">${esc(r.title)}</div>
+    <div class="meta"><span class="mono">${esc(r.ref)}</span><span>${esc(T(CATEGORIES[r.category]?CATEGORIES[r.category].label:r.categoryLabel))}</span><span>${esc(t('updated'))} ${fmtDate(r.createdAt)}</span></div>
+  </div>`;
+}
+/* ---------- Admin sign-in page (separate URL: /admin) ---------- */
+function vAdminLogin(){
+  return shell(`<div class="wrap narrow" style="max-width:420px">
+    <div class="card pad stack" style="margin-top:30px">
+      <div class="ic" style="width:40px;height:40px;border-radius:10px;background:var(--amber-soft);color:var(--amber);display:grid;place-items:center">${I.admin}</div>
+      <div class="sechead" style="margin-top:4px"><h2>${esc(t('admin_page_title'))}</h2></div>
+      <div class="secsub" style="margin:0">${esc(t('admin_page_sub'))}</div>
+      <label class="fld"><span class="lab">${esc(t('passcode'))}</span><input id="adminpass" type="password"></label>
+      <div id="adminerr" class="hint" style="color:var(--red)"></div>
+      <button class="btn primary" id="adminloginbtn">${esc(t('enter'))} ${I.arrow}</button>
+      <a href="/" class="hint" style="text-align:center;margin-top:2px">${esc(t('back_to_portal'))}</a>
     </div>
   </div>`);
 }
@@ -711,25 +786,16 @@ function vClientForm(){
   const d=S.draft;
   const cats=Object.entries(CATEGORIES).map(([k,c])=>`<div class="path ${d.category===k?'sel':''}" style="padding:18px" data-cat="${k}"><div class="ic">${c.icon}</div><h3 style="font-size:16px">${esc(T(c.label))}</h3><p>${esc(T(c.blurb))}</p></div>`).join('');
   return shell(`<div class="wrap narrow">
-    <button class="btn ghost sm" data-go="client_new">${I.back} ${esc(t('back'))}</button>
+    <button class="btn ghost sm" data-go="dashboard">${I.back} ${esc(t('my_requests'))}</button>
     <form id="reqform" class="stack" style="margin-top:14px" onsubmit="return false">
       <div class="card pad stack">
-        <div class="sechead"><span class="n">01</span><h2>${esc(t('sec_details'))}</h2></div>
-        <div class="grid2">
-          <label class="fld"><span class="lab">${esc(t('contact_name'))} <span class="req">*</span></span><input data-c="name" value="${esc(d.client.name||'')}" placeholder="${esc(t('ph_fullname'))}"></label>
-          <label class="fld"><span class="lab">${esc(t('email'))} <span class="req">*</span></span><input data-c="email" type="email" value="${esc(d.client.email||'')}" placeholder="${esc(t('ph_email'))}"></label>
-          <label class="fld"><span class="lab">${esc(t('company'))}</span><input data-c="company" value="${esc(d.client.company||'')}" placeholder="${esc(t('ph_company'))}"></label>
-          <label class="fld"><span class="lab">${esc(t('phone'))}</span><input data-c="phone" type="tel" value="${esc(d.client.phone||'')}" placeholder="${esc(t('optional'))}"></label>
-        </div>
-      </div>
-      <div class="card pad stack">
-        <div class="sechead"><span class="n">02</span><h2>${esc(t('sec_need'))}</h2></div>
+        <div class="sechead"><span class="n">01</span><h2>${esc(t('sec_need'))}</h2></div>
         <div class="secsub">${esc(t('sec_need_sub'))}</div>
         <div class="pathgrid" id="catpick" style="margin-top:0">${cats}</div>
       </div>
       <div id="qwrap"></div>
       <div class="card pad stack" id="descwrap" ${d.category?'':'hidden'}>
-        <div class="sechead"><span class="n">04</span><h2>${esc(t('sec_desc'))}</h2></div>
+        <div class="sechead"><span class="n">03</span><h2>${esc(t('sec_desc'))}</h2></div>
         <label class="fld"><span class="lab">${esc(t('describe_label'))}</span><textarea data-c="description" placeholder="${esc(t('describe_ph'))}">${esc(d.description||'')}</textarea></label>
         <div>
           <span class="lab" style="font-size:12.5px;font-weight:500;color:var(--ink-2)">${esc(t('attachments'))}</span>
@@ -760,7 +826,7 @@ function mountClientForm(root){
 function renderQuestionnaire(root){
   const d=S.draft, c=CATEGORIES[d.category]; if(!c) return;
   const wrap=$('#qwrap',root);
-  let inner=`<div class="card pad stack"><div class="sechead"><span class="n">03</span><h2>${esc(T(c.label))}</h2></div><div class="grid2">${c.fields.map(f=>fieldHTML(f,d.fields[f.k])).join('')}</div>`;
+  let inner=`<div class="card pad stack"><div class="sechead"><span class="n">02</span><h2>${esc(T(c.label))}</h2></div><div class="grid2">${c.fields.map(f=>fieldHTML(f,d.fields[f.k])).join('')}</div>`;
   if(c.perItem){ const pi=c.perItem; const cnt=d.fields[pi.countKey]||d.moulds.length||1;
     inner+=`<hr class="divider"><label class="fld" style="max-width:300px"><span class="lab">${esc(T(pi.countLabel))}</span><input type="number" min="1" max="20" id="mcount" value="${cnt}"></label><div class="secsub" style="margin:0">${esc(t('add_each_note'))}</div><div id="moulds" class="stack" style="gap:10px"></div>`;
   }
@@ -780,8 +846,7 @@ function renderAttList(root){
   $$('[data-rm]',box).forEach(x=>x.addEventListener('click',()=>{ d.attachments.splice(+x.dataset.rm,1); renderAttList(root); }));
 }
 async function submitRequest(){
-  const d=S.draft, c=d.client;
-  if(!c.name||!c.email){ toast(t('need_name_email')); return; }
+  const d=S.draft;
   if(!d.category){ toast(t('choose_type')); return; }
   const btn=$('#submitbtn'), msg=$('#submitmsg');
   btn.disabled=true;
@@ -790,47 +855,14 @@ async function submitRequest(){
     if(d.attachments.length){ msg.innerHTML=`<span class="spin"></span> ${esc(t('uploading'))}`; atts=await uploadFiles(d.attachments.map(a=>a.file)); }
     msg.innerHTML=`<span class="spin"></span> ${esc(t('submitting'))}`;
     const cat=CATEGORIES[d.category];
-    const body=JSON.stringify({ client:c, category:d.category, categoryLabel:cat.label.en, title:d.fields.project||d.fields.subject||cat.label.en, fields:d.fields, moulds:cat.perItem?d.moulds:[], description:d.description, attachments:atts });
-    const r=await api('/api/requests',{method:'POST',body});
-    S.clientCreds={ref:r.ref, email:c.email}; S.doneRef=r.ref; S.draft=null; S.view='client_done'; render();
-  }catch(e){ btn.disabled=false; msg.textContent=t('submit_review_msg'); toast(t('network_error')); }
-}
-function vClientDone(){
-  return shell(`<div class="wrap narrow">
-    <div class="card pad stack" style="align-items:center;text-align:center;padding:40px 26px">
-      <div class="ic" style="width:52px;height:52px;border-radius:12px;background:var(--green-soft);color:var(--green);display:grid;place-items:center">${I.chk}</div>
-      <h2 style="font-size:22px">${esc(t('done_title'))}</h2>
-      <p class="muted" style="max-width:48ch">${esc(t('done_desc'))}</p>
-      <div class="mono" style="font-size:22px;font-weight:600;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px 20px">${esc(S.doneRef)}</div>
-      <div class="btnrow" style="justify-content:center">
-        <button class="btn primary" data-track-now>${esc(t('track_this'))} ${I.arrow}</button>
-        <button class="btn" data-go="client_form">${esc(t('submit_another'))}</button>
-      </div>
-    </div>
-  </div>`);
-}
-/* ---------- Client track ---------- */
-function vClientTrack(){
-  const cr=S.clientCreds||{};
-  return shell(`<div class="wrap narrow">
-    <button class="btn ghost sm" data-go="client_new">${I.back} ${esc(t('back'))}</button>
-    <div class="card pad stack" style="margin-top:14px;max-width:460px">
-      <div class="sechead"><h2>${esc(t('track_head'))}</h2></div>
-      <div class="secsub" style="margin:0">${esc(t('track_sub'))}</div>
-      <label class="fld"><span class="lab">${esc(t('ref_number'))}</span><input id="tref" placeholder="RFQ-26-0001" value="${esc(cr.ref||'')}"></label>
-      <label class="fld"><span class="lab">${esc(t('email'))}</span><input id="temail" type="email" placeholder="${esc(t('ph_email'))}" value="${esc(cr.email||'')}"></label>
-      <button class="btn primary" id="trackbtn">${esc(t('open_request'))} ${I.arrow}</button>
-      <div id="trackerr" class="hint" style="color:var(--red)"></div>
-    </div>
-  </div>`);
-}
-async function doTrack(){
-  const ref=$('#tref').value.trim(), email=$('#temail').value.trim();
-  const btn=$('#trackbtn'); btn.disabled=true;
-  try{
-    const r=await api('/api/track',{method:'POST',body:JSON.stringify({ref,email})});
-    S.clientCreds={ref,email}; S.tracked=r.request; S.role='client'; S.view='client_detail'; render();
-  }catch(e){ btn.disabled=false; $('#trackerr').textContent=t('err_not_found'); }
+    const body=JSON.stringify({ category:d.category, categoryLabel:cat.label.en, title:d.fields.project||d.fields.subject||cat.label.en, fields:d.fields, moulds:cat.perItem?d.moulds:[], description:d.description, attachments:atts });
+    const r=await api('/api/requests',{method:'POST',auth:'customer',body});
+    S.draft=null;
+    // refresh dashboard list and open the new request
+    try{ const me=await api('/api/me',{auth:'customer'}); S.me=me.customer; S.list=me.requests; }catch(_){}
+    await openMyRequest(r.id);
+    toast(t('done_title'));
+  }catch(e){ btn.disabled=false; msg.textContent=t('submit_review_msg'); if(e&&e.code==='unauthorized'){ handleCustAuthLoss(); } else toast(t('network_error')); }
 }
 
 /* ---------- Shared detail pieces ---------- */
@@ -894,9 +926,9 @@ function timelineHTML(req){
 
 /* ---------- Client detail ---------- */
 function vClientDetail(){
-  const req=S.tracked; if(!req) return vClientTrack();
+  const req=S.current; if(!req) return vDashboard();
   return shell(`<div class="wrap narrow">
-    <button class="btn ghost sm" data-go="client_track">${I.back} ${esc(t('track_another'))}</button>
+    <button class="btn ghost sm" data-go="dashboard">${I.back} ${esc(t('my_requests'))}</button>
     <div class="detail" style="margin-top:12px">
       <div class="card pad">
         <div class="dh"><div style="flex:1"><div class="mono muted" style="font-size:12px">${esc(req.ref)}</div><h2>${esc(req.title)}</h2><div class="muted" style="font-size:13px;margin-top:4px">${esc(T(CATEGORIES[req.category].label))} · ${fmtDate(req.created_at?new Date(req.created_at).getTime():req.events[0].at)}</div></div>${statusPill(req.status)}</div>
@@ -1040,38 +1072,91 @@ function adminDetail(req){
 function render(){
   const app=document.getElementById('app');
   let html;
-  switch(S.view){
-    case 'client_new': html=vClientNew(); break;
-    case 'client_form': html=vClientForm(); break;
-    case 'client_done': html=vClientDone(); break;
-    case 'client_track': html=vClientTrack(); break;
-    case 'client_detail': html=vClientDetail(); break;
-    case 'admin': html=vAdmin(); break;
-    default: html=vLanding();
+  if(S.area==='admin'){
+    html = S.adminIn ? vAdmin() : vAdminLogin();
+  } else {
+    switch(S.view){
+      case 'dashboard': html=vDashboard(); break;
+      case 'new': html=vClientForm(); break;
+      case 'detail': html=vClientDetail(); break;
+      default: html=vAuth();
+    }
   }
   app.innerHTML=html;
   bindGlobal(); bindView(); window.scrollTo(0,0);
 }
 function bindGlobal(){
   $$('[data-lang]').forEach(b=>b.addEventListener('click',()=>{ L=b.dataset.lang; try{localStorage.setItem('sprue_lang',L);}catch(e){} document.documentElement.lang=L; render(); }));
-  const home=$('[data-home]'); if(home) home.addEventListener('click',()=>go('landing'));
-  const lo=$('[data-logout]'); if(lo) lo.addEventListener('click',(e)=>{ e.stopPropagation(); clearToken(); S.role=null; go('landing'); });
+  const home=$('[data-home]'); if(home) home.addEventListener('click',handleHome);
+  const loc=$('[data-logout-cust]'); if(loc) loc.addEventListener('click',(e)=>{ e.stopPropagation(); clearCustToken(); S.me=null; S.list=[]; S.view='auth'; render(); });
+  const loa=$('[data-logout-admin]'); if(loa) loa.addEventListener('click',(e)=>{ e.stopPropagation(); clearAdminToken(); S.adminIn=false; render(); });
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
-  const ad=$('[data-admin]'); if(ad) ad.addEventListener('click',adminEntry);
+  $$('[data-authtab]').forEach(el=>el.addEventListener('click',(e)=>{ e.preventDefault(); S.authTab=el.dataset.authtab; render(); }));
+}
+function handleHome(){
+  if(S.area==='admin'){ if(S.adminIn) render(); return; }
+  if(S.me){ go('dashboard'); } else { S.view='auth'; render(); }
 }
 function go(v){
-  if(v==='landing'){ S.role=null; S.current=null; S.reqId=null; }
-  if(v==='client_form'){ S.role='client'; if(!S.draft) S.draft=newDraft(); }
-  if(v==='client_new'){ S.role='client'; }
+  if(v==='new'){ if(!S.draft) S.draft=newDraft(); }
   S.view=v; render();
+  if(v==='dashboard') refreshDashboard();
+}
+async function refreshDashboard(){
+  try{ const r=await api('/api/me',{auth:'customer'}); S.me=r.customer; S.list=r.requests; if(S.view==='dashboard') render(); }
+  catch(e){ if(e&&e.code==='unauthorized') handleCustAuthLoss(); }
 }
 function bindView(){
   const app=document.getElementById('app');
-  if(S.view==='client_form') mountClientForm(app);
-  if(S.view==='client_done'){ const b=$('[data-track-now]'); if(b) b.addEventListener('click',()=>{ S.view='client_track'; render(); setTimeout(doTrack,0); }); }
-  if(S.view==='client_track'){ const b=$('#trackbtn'); if(b) b.addEventListener('click',doTrack); ['tref','temail'].forEach(id=>{ const e=$('#'+id); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doTrack(); }); }); }
-  if(S.view==='client_detail') bindClientDetail(app);
-  if(S.view==='admin') bindAdmin(app);
+  if(S.area==='admin'){ if(S.adminIn) bindAdmin(app); else bindAdminLogin(app); return; }
+  if(S.view==='auth') bindAuth(app);
+  if(S.view==='dashboard') $$('[data-open]',app).forEach(c=>c.addEventListener('click',()=>openMyRequest(c.dataset.open)));
+  if(S.view==='new') mountClientForm(app);
+  if(S.view==='detail') bindClientDetail(app);
+}
+
+/* ---------- Customer auth ---------- */
+function bindAuth(app){
+  const btn=$('#authbtn',app); if(btn) btn.addEventListener('click',doAuth);
+  ['a_email','a_pass','a_name','a_company','a_phone'].forEach(id=>{ const e=$('#'+id,app); if(e) e.addEventListener('keydown',ev=>{ if(ev.key==='Enter') doAuth(); }); });
+}
+async function doAuth(){
+  const isLogin=S.authTab!=='register';
+  const email=($('#a_email').value||'').trim();
+  const pass=$('#a_pass').value||'';
+  const err=$('#autherr'), btn=$('#authbtn'); err.textContent='';
+  const payload={email,password:pass};
+  if(!isLogin){
+    payload.name=($('#a_name').value||'').trim();
+    payload.company=($('#a_company').value||'').trim();
+    payload.phone=($('#a_phone').value||'').trim();
+    if(!payload.name){ err.textContent=t('err_name_required'); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent=t('err_bad_email'); return; }
+    if(pass.length<6){ err.textContent=t('err_weak_password'); return; }
+  }
+  btn.disabled=true;
+  try{
+    const r=await api('/api/auth/'+(isLogin?'login':'register'),{method:'POST',body:JSON.stringify(payload)});
+    setCustToken(r.token);
+    const me=await api('/api/me',{auth:'customer'});
+    S.me=me.customer; S.list=me.requests; S.view='dashboard'; render();
+  }catch(e){
+    btn.disabled=false;
+    const code=e&&e.error;
+    if(code==='bad_credentials') err.textContent=t('err_bad_credentials');
+    else if(code==='email_taken') err.textContent=t('err_email_taken');
+    else if(code==='weak_password') err.textContent=t('err_weak_password');
+    else if(code==='bad_email') err.textContent=t('err_bad_email');
+    else if(code==='name_required') err.textContent=t('err_name_required');
+    else err.textContent=t('network_error');
+  }
+}
+function handleCustAuthLoss(){ clearCustToken(); S.me=null; S.list=[]; S.view='auth'; toast(t('session_expired')); render(); }
+
+/* ---------- Customer request detail ---------- */
+async function openMyRequest(id){
+  try{ const r=await api('/api/my/requests/'+id,{auth:'customer'}); S.current=r.request; S.view='detail'; render(); }
+  catch(e){ if(e&&e.code==='unauthorized') handleCustAuthLoss(); else toast(t('network_error')); }
 }
 function bindClientDetail(app){
   const ca=$('#cattach',app);
@@ -1085,13 +1170,25 @@ async function clientSendMsg(){
   const btn=$('#csend'); btn.disabled=true;
   try{
     let atts=[]; if(S.composeAtts.length) atts=await uploadFiles(S.composeAtts);
-    const r=await api('/api/track/message',{method:'POST',body:JSON.stringify({...S.clientCreds,text,atts})});
-    S.tracked=r.request; S.composeAtts=[]; render(); toast(t('sent_to_team'));
-  }catch(e){ btn.disabled=false; toast(t('network_error')); }
+    const r=await api('/api/my/requests/'+S.current.id+'/message',{method:'POST',auth:'customer',body:JSON.stringify({text,atts})});
+    S.current=r.request; S.composeAtts=[]; render(); toast(t('sent_to_team'));
+  }catch(e){ btn.disabled=false; if(e&&e.code==='unauthorized') handleCustAuthLoss(); else toast(t('network_error')); }
 }
 async function clientQuoteResp(qid,decision){
-  try{ const r=await api('/api/track/quote-response',{method:'POST',body:JSON.stringify({...S.clientCreds,quoteId:qid,decision})}); S.tracked=r.request; render(); toast(decision==='accepted'?t('st_accepted'):t('st_declined')); }
-  catch(e){ toast(t('network_error')); }
+  try{ const r=await api('/api/my/requests/'+S.current.id+'/quote-response',{method:'POST',auth:'customer',body:JSON.stringify({quoteId:qid,decision})}); S.current=r.request; render(); toast(decision==='accepted'?t('st_accepted'):t('st_declined')); }
+  catch(e){ if(e&&e.code==='unauthorized') handleCustAuthLoss(); else toast(t('network_error')); }
+}
+
+/* ---------- Admin ---------- */
+function bindAdminLogin(app){
+  const btn=$('#adminloginbtn',app); const inp=$('#adminpass',app);
+  const doLogin=async()=>{
+    const pass=inp.value; const err=$('#adminerr',app);
+    try{ const r=await api('/api/admin/login',{method:'POST',body:JSON.stringify({passcode:pass})}); setAdminToken(r.token); const l=await api('/api/admin/requests',{auth:'admin'}); S.list=l.requests; S.adminIn=true; render(); }
+    catch(e){ err.textContent=t('wrong_passcode'); }
+  };
+  if(btn) btn.addEventListener('click',doLogin);
+  if(inp){ inp.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); }); setTimeout(()=>inp.focus(),50); }
 }
 function bindAdmin(app){
   $$('#reqlist [data-id]',app).forEach(c=>c.addEventListener('click',()=>openReq(c.dataset.id)));
@@ -1106,12 +1203,11 @@ function bindAdminActions(app){
 }
 async function openReq(id){
   S.reqId=id; S.tab='overview';
-  try{ const r=await api('/api/admin/requests/'+id,{auth:true}); S.current=r.request; render(); }
+  try{ const r=await api('/api/admin/requests/'+id,{auth:'admin'}); S.current=r.request; render(); }
   catch(e){ handleAdminErr(e); }
 }
-async function refreshAfter(updated){
+function refreshAfter(updated){
   S.current=updated;
-  // update list entry counts/status
   const li=S.list.find(x=>x.id===updated.id);
   if(li){ li.status=updated.status; li.priority=updated.priority; li.group=updated.group; }
   render();
@@ -1119,56 +1215,40 @@ async function refreshAfter(updated){
 async function adminSendMsg(){
   const text=$('#amsg').value.trim(); const internal=$('#ainternal').checked;
   if(!text){ toast(t('write_message')); return; }
-  try{ const r=await api('/api/admin/requests/'+S.current.id+'/message',{method:'POST',auth:true,body:JSON.stringify({text,internal})}); S.tab='thread'; refreshAfter(r.request); toast(internal?t('internal_saved'):t('sent_customer')); }
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/message',{method:'POST',auth:'admin',body:JSON.stringify({text,internal})}); S.tab='thread'; refreshAfter(r.request); toast(internal?t('internal_saved'):t('sent_customer')); }
   catch(e){ handleAdminErr(e); }
 }
 async function adminSendQuote(){
   const amount=$('#q_amt').value.trim(); if(!amount){ toast(t('enter_amount')); return; }
   const body={amount,currency:$('#q_cur').value,leadTime:$('#q_lead').value.trim(),validity:$('#q_val').value.trim(),incoterm:$('#q_inc').value.trim(),notes:$('#q_notes').value.trim()};
-  try{ const r=await api('/api/admin/requests/'+S.current.id+'/quote',{method:'POST',auth:true,body:JSON.stringify(body)}); S.tab='quote'; refreshAfter(r.request); toast(t('quote_sent')); }
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/quote',{method:'POST',auth:'admin',body:JSON.stringify(body)}); S.tab='quote'; refreshAfter(r.request); toast(t('quote_sent')); }
   catch(e){ handleAdminErr(e); }
 }
 async function adminClassify(){
   const status = S.current.status==='submitted'?'classified':undefined;
   const body={group:$('#m_group').value,priority:$('#m_prio').value,note:$('#m_cnote').value.trim(),status};
-  try{ const r=await api('/api/admin/requests/'+S.current.id+'/classify',{method:'POST',auth:true,body:JSON.stringify(body)}); S.tab='manage'; refreshAfter(r.request); toast(t('classified_ok')); }
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/classify',{method:'POST',auth:'admin',body:JSON.stringify(body)}); S.tab='manage'; refreshAfter(r.request); toast(t('classified_ok')); }
   catch(e){ handleAdminErr(e); }
 }
 async function adminSetStatus(){
   const body={status:$('#m_status').value,note:$('#m_snote').value.trim()};
-  try{ const r=await api('/api/admin/requests/'+S.current.id+'/status',{method:'POST',auth:true,body:JSON.stringify(body)}); S.tab='manage'; refreshAfter(r.request); toast(t('status_updated')); }
+  try{ const r=await api('/api/admin/requests/'+S.current.id+'/status',{method:'POST',auth:'admin',body:JSON.stringify(body)}); S.tab='manage'; refreshAfter(r.request); toast(t('status_updated')); }
   catch(e){ handleAdminErr(e); }
 }
-function handleAdminErr(e){ if(e&&e.code==='unauthorized'){ S.role=null; toast(t('session_expired')); go('landing'); } else toast(t('network_error')); }
-
-/* ---------- Admin entry / login ---------- */
-async function adminEntry(){
-  if(TOKEN){ try{ const r=await api('/api/admin/requests',{auth:true}); S.list=r.requests; S.role='admin'; S.view='admin'; render(); return; } catch(e){ clearToken(); } }
-  openLogin();
-}
-function openLogin(){
-  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" id="mbg"><div class="modal">
-    <h3>${esc(t('login_head'))}</h3><p class="muted" style="font-size:13.5px;margin-bottom:14px">${esc(t('login_sub'))}</p>
-    <label class="fld"><span class="lab">${esc(t('passcode'))}</span><input id="alog" type="password"></label>
-    <div id="alogerr" class="hint" style="color:var(--red);margin-top:6px"></div>
-    <div class="btnrow" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="lcancel">${esc(t('cancel'))}</button><button class="btn primary" id="ldo">${esc(t('enter'))}</button></div>
-  </div></div>`;
-  const close=()=>document.getElementById('modal-root').innerHTML='';
-  $('#mbg').addEventListener('click',e=>{ if(e.target.id==='mbg') close(); });
-  $('#lcancel').addEventListener('click',close);
-  const doLogin=async()=>{
-    const pass=$('#alog').value;
-    try{ const r=await api('/api/admin/login',{method:'POST',body:JSON.stringify({passcode:pass})}); setToken(r.token); close(); const l=await api('/api/admin/requests',{auth:true}); S.list=l.requests; S.role='admin'; S.view='admin'; render(); }
-    catch(e){ $('#alogerr').textContent=t('wrong_passcode'); }
-  };
-  $('#ldo').addEventListener('click',doLogin);
-  $('#alog').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-  setTimeout(()=>{ const el=$('#alog'); if(el) el.focus(); },50);
-}
+function handleAdminErr(e){ if(e&&e.code==='unauthorized'){ S.adminIn=false; toast(t('session_expired')); render(); } else toast(t('network_error')); }
 
 /* ============================ Boot ============================ */
 document.documentElement.lang=L;
-render();
+S.area = /\/admin\/?$/.test(location.pathname) ? 'admin' : 'customer';
+(async function boot(){
+  if(S.area==='admin'){
+    if(ADMIN_TOKEN){ try{ const r=await api('/api/admin/requests',{auth:'admin'}); S.list=r.requests; S.adminIn=true; }catch(e){ clearAdminToken(); } }
+    render();
+  } else {
+    if(CUST_TOKEN){ try{ const r=await api('/api/me',{auth:'customer'}); S.me=r.customer; S.list=r.requests; S.view='dashboard'; }catch(e){ clearCustToken(); S.view='auth'; } }
+    render();
+  }
+})();
 })();
 </script>
 </body>

@@ -13,6 +13,23 @@ create or replace function next_ref() returns text
 $$;
 
 -- ------------------------------------------------------------
+--  Customer accounts (email + password). Passwords are bcrypt
+--  hashes created by the server; only the hash is stored here.
+-- ------------------------------------------------------------
+create table if not exists customers (
+  id            uuid primary key default gen_random_uuid(),
+  email         text not null,
+  password_hash text not null,
+  name          text not null,
+  company       text default '',
+  phone         text default '',
+  created_at    timestamptz not null default now()
+);
+-- case-insensitive unique email
+create unique index if not exists customers_email_uidx on customers(lower(email));
+alter table customers enable row level security;
+
+-- ------------------------------------------------------------
 --  Main table. Sub-collections (events/quotes) are jsonb so the
 --  app model maps 1:1; all mutations go through the atomic
 --  functions below (row-level append, no lost updates).
@@ -34,9 +51,14 @@ create table if not exists requests (
   priority       text  default 'Standard',
   status         text  not null default 'submitted',
   quotes         jsonb not null default '[]'::jsonb,   -- [{id,at,amount,...,status}]
-  events         jsonb not null default '[]'::jsonb    -- timeline / thread
+  events         jsonb not null default '[]'::jsonb,   -- timeline / thread
+  customer_id    uuid references customers(id)         -- owner (account)
 );
 
+-- If you deployed an earlier version, this adds the new column in place:
+alter table requests add column if not exists customer_id uuid references customers(id);
+
+create index if not exists requests_customer_idx on requests(customer_id);
 create index if not exists requests_status_idx  on requests(status);
 create index if not exists requests_created_idx on requests(created_at desc);
 create index if not exists requests_ref_idx      on requests(lower(ref));

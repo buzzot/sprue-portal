@@ -7,6 +7,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
@@ -45,20 +46,32 @@ const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
   res.status(500).json({ error: 'server_error', message: e.message });
 });
 
-function signToken() {
+function signAdminToken() {
   return jwt.sign({ role: 'admin' }, SESSION_SECRET, { expiresIn: '12h' });
 }
-function requireAdmin(req, res, next) {
+function signCustomerToken(c) {
+  return jwt.sign({ role: 'customer', sub: c.id, email: c.email, name: c.name }, SESSION_SECRET, { expiresIn: '30d' });
+}
+function bearer(req) {
   const h = req.headers.authorization || '';
-  const token = h.startsWith('Bearer ') ? h.slice(7) : null;
+  return h.startsWith('Bearer ') ? h.slice(7) : null;
+}
+function requireAdmin(req, res, next) {
   try {
-    const p = jwt.verify(token, SESSION_SECRET);
+    const p = jwt.verify(bearer(req), SESSION_SECRET);
     if (p.role !== 'admin') throw new Error('bad role');
     next();
-  } catch (_) {
-    res.status(401).json({ error: 'unauthorized' });
-  }
+  } catch (_) { res.status(401).json({ error: 'unauthorized' }); }
 }
+function requireCustomer(req, res, next) {
+  try {
+    const p = jwt.verify(bearer(req), SESSION_SECRET);
+    if (p.role !== 'customer' || !p.sub) throw new Error('bad role');
+    req.customer = p;   // {sub, email, name}
+    next();
+  } catch (_) { res.status(401).json({ error: 'unauthorized' }); }
+}
+const publicProfile = (c) => ({ id: c.id, name: c.name, email: c.email, company: c.company || '', phone: c.phone || '' });
 
 const SAFE_STATUSES = new Set([
   'submitted','under_review','classified','info_needed','quoted','approved',
@@ -106,18 +119,84 @@ async function getByRef(ref) {
 }
 
 /* ============================================================
- *  PUBLIC (customer) endpoints
+ *  CUSTOMER ACCOUNTS — register / login / profile
  * ============================================================ */
 const publicLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 60 });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40 });
+const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 120 });
+
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function customerById(id) {
+  const { data, error } = await supabase.from('customers').select('*').eq('id', id).single();
+  if (error) throw error;
+  return data;
+}
+async function customerRequests(custId) {
+  const { data, error } = await supabase.from('requests')
+    .select('id,ref,created_at,category,category_label,title,status,priority,quotes,events')
+    .eq('customer_id', custId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((r) => ({
+    id: r.id, ref: r.ref, createdAt: new Date(r.created_at).getTime(),
+    category: r.category, categoryLabel: r.category_label, title: r.title,
+    status: r.status, priority: r.priority,
+    quoteCount: (r.quotes || []).length,
+    adminMsgCount: (r.events || []).filter((e) => e.kind === 'message' && e.role === 'admin').length,
+  }));
+}
+
+app.post('/api/auth/register', authLimiter, wrap(async (req, res) => {
+  const b = req.body || {};
+  const email = String(b.email || '').trim().toLowerCase();
+  const password = String(b.password || '');
+  const name = String(b.name || '').trim();
+  if (!emailRe.test(email)) return res.status(400).json({ error: 'bad_email' });
+  if (password.length < 6) return res.status(400).json({ error: 'weak_password' });
+  if (!name) return res.status(400).json({ error: 'name_required' });
+
+  const { data: existing } = await supabase.from('customers').select('id').ilike('email', email).limit(1);
+  if (existing && existing.length) return res.status(409).json({ error: 'email_taken' });
+
+  const password_hash = await bcrypt.hash(password, 10);
+  const { data, error } = await supabase.from('customers')
+    .insert({ email, password_hash, name, company: String(b.company || '').slice(0, 200), phone: String(b.phone || '').slice(0, 60) })
+    .select('*').single();
+  if (error) {
+    if (/duplicate|unique/i.test(error.message)) return res.status(409).json({ error: 'email_taken' });
+    throw error;
+  }
+  res.json({ token: signCustomerToken(data), customer: publicProfile(data) });
+}));
+
+app.post('/api/auth/login', authLimiter, wrap(async (req, res) => {
+  const email = String((req.body || {}).email || '').trim().toLowerCase();
+  const password = String((req.body || {}).password || '');
+  const { data } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+  const c = data && data[0];
+  if (!c || !(await bcrypt.compare(password, c.password_hash))) {
+    return res.status(401).json({ error: 'bad_credentials' });
+  }
+  res.json({ token: signCustomerToken(c), customer: publicProfile(c) });
+}));
+
+/* Profile + this customer's requests (the dashboard payload). */
+app.get('/api/me', requireCustomer, wrap(async (req, res) => {
+  const c = await customerById(req.customer.sub);
+  res.json({ customer: publicProfile(c), requests: await customerRequests(c.id) });
+}));
+
+/* ============================================================
+ *  CUSTOMER — files & requests (all require a customer session)
+ * ============================================================ */
 
 /* Upload files -> Supabase Storage. Returns attachment descriptors. */
-app.post('/api/uploads', uploadLimiter, upload.array('files', 12), wrap(async (req, res) => {
+app.post('/api/uploads', requireCustomer, uploadLimiter, upload.array('files', 12), wrap(async (req, res) => {
   const out = [];
   for (const f of req.files || []) {
     const ext = (f.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
     const id = rid();
-    const p = `att/${new Date().getFullYear()}/${id}.${ext}`;
+    const p = `att/${req.customer.sub}/${id}.${ext}`;
     const { error } = await supabase.storage.from(STORAGE_BUCKET)
       .upload(p, f.buffer, { contentType: f.mimetype || 'application/octet-stream', upsert: false });
     if (error) throw error;
@@ -126,20 +205,14 @@ app.post('/api/uploads', uploadLimiter, upload.array('files', 12), wrap(async (r
   res.json({ attachments: out });
 }));
 
-/* Create a new request. */
-app.post('/api/requests', publicLimiter, wrap(async (req, res) => {
+/* Create a new request tied to the signed-in customer. */
+app.post('/api/requests', requireCustomer, wrap(async (req, res) => {
   const b = req.body || {};
-  const client = b.client || {};
-  if (!client.name || !client.email) return res.status(400).json({ error: 'name_email_required' });
   if (!b.category) return res.status(400).json({ error: 'category_required' });
-
+  const c = await customerById(req.customer.sub);
   const row = {
-    client: {
-      name: String(client.name).slice(0, 200),
-      email: String(client.email).slice(0, 200),
-      company: String(client.company || '').slice(0, 200),
-      phone: String(client.phone || '').slice(0, 60),
-    },
+    customer_id: c.id,
+    client: { name: c.name, email: c.email, company: c.company || '', phone: c.phone || '' },
     category: String(b.category).slice(0, 60),
     category_label: String(b.categoryLabel || b.category).slice(0, 120),
     title: String(b.title || b.category).slice(0, 200),
@@ -148,49 +221,48 @@ app.post('/api/requests', publicLimiter, wrap(async (req, res) => {
     description: String(b.description || '').slice(0, 8000),
     attachments: Array.isArray(b.attachments) ? b.attachments : [],
     group: '', priority: 'Standard', status: 'submitted', quotes: [],
-    events: [evt('status', client.name, 'client', 'Request submitted', { status: 'submitted' })],
+    events: [evt('status', c.name, 'client', 'Request submitted', { status: 'submitted' })],
   };
   const { data, error } = await supabase.from('requests').insert(row).select('ref,id').single();
   if (error) throw error;
   res.json({ ok: true, ref: data.ref, id: data.id });
 }));
 
-/* Customer track — requires ref + matching email. */
-app.post('/api/track', publicLimiter, wrap(async (req, res) => {
-  const { ref, email } = req.body || {};
-  if (!ref || !email) return res.status(400).json({ error: 'ref_email_required' });
-  const r = await getByRef(String(ref).trim());
-  if (!r || (r.client.email || '').toLowerCase() !== String(email).trim().toLowerCase()) {
-    return res.status(404).json({ error: 'not_found' });
-  }
+app.get('/api/my/requests', requireCustomer, wrap(async (req, res) => {
+  res.json({ requests: await customerRequests(req.customer.sub) });
+}));
+
+/* Fetch one of my requests (ownership enforced). */
+async function ownedRequest(id, custId) {
+  const { data, error } = await supabase.from('requests').select('*').eq('id', id).single();
+  if (error) return null;
+  if (!data || data.customer_id !== custId) return null;
+  return data;
+}
+app.get('/api/my/requests/:id', requireCustomer, wrap(async (req, res) => {
+  const r = await ownedRequest(req.params.id, req.customer.sub);
+  if (!r) return res.status(404).json({ error: 'not_found' });
   res.json({ request: await signRequest(clientView(r)) });
 }));
 
-/* Customer posts a message (optionally with attachments). */
-app.post('/api/track/message', publicLimiter, wrap(async (req, res) => {
-  const { ref, email, text, atts } = req.body || {};
-  const r = await getByRef(String(ref || '').trim());
-  if (!r || (r.client.email || '').toLowerCase() !== String(email || '').trim().toLowerCase()) {
-    return res.status(404).json({ error: 'not_found' });
-  }
+app.post('/api/my/requests/:id/message', requireCustomer, wrap(async (req, res) => {
+  const r = await ownedRequest(req.params.id, req.customer.sub);
+  if (!r) return res.status(404).json({ error: 'not_found' });
+  const { text, atts } = req.body || {};
+  if (!text && !(atts && atts.length)) return res.status(400).json({ error: 'empty' });
   const e = evt('message', r.client.name, 'client', String(text || '').slice(0, 5000) || '(attachments)', { atts: Array.isArray(atts) ? atts : [] });
   await supabase.rpc('append_event', { p_id: r.id, p_event: e });
-  const fresh = await getById(r.id);
-  res.json({ request: await signRequest(clientView(fresh)) });
+  res.json({ request: await signRequest(clientView(await getById(r.id))) });
 }));
 
-/* Customer accepts / declines a quotation. */
-app.post('/api/track/quote-response', publicLimiter, wrap(async (req, res) => {
-  const { ref, email, quoteId, decision } = req.body || {};
+app.post('/api/my/requests/:id/quote-response', requireCustomer, wrap(async (req, res) => {
+  const { quoteId, decision } = req.body || {};
   if (!['accepted', 'declined'].includes(decision)) return res.status(400).json({ error: 'bad_decision' });
-  const r = await getByRef(String(ref || '').trim());
-  if (!r || (r.client.email || '').toLowerCase() !== String(email || '').trim().toLowerCase()) {
-    return res.status(404).json({ error: 'not_found' });
-  }
+  const r = await ownedRequest(req.params.id, req.customer.sub);
+  if (!r) return res.status(404).json({ error: 'not_found' });
   const e = evt('message', r.client.name, 'client', `Quotation ${decision} by customer.`, {});
   await supabase.rpc('respond_quote', { p_id: r.id, p_quote_id: String(quoteId), p_decision: decision, p_event: e });
-  const fresh = await getById(r.id);
-  res.json({ request: await signRequest(clientView(fresh)) });
+  res.json({ request: await signRequest(clientView(await getById(r.id))) });
 }));
 
 /* ============================================================
@@ -203,7 +275,7 @@ app.post('/api/admin/login', loginLimiter, wrap(async (req, res) => {
   if (!passcode || String(passcode) !== String(ADMIN_PASSCODE)) {
     return res.status(401).json({ error: 'bad_passcode' });
   }
-  res.json({ token: signToken() });
+  res.json({ token: signAdminToken() });
 }));
 
 app.get('/api/admin/requests', requireAdmin, wrap(async (req, res) => {
