@@ -270,9 +270,19 @@ app.post('/api/my/requests/:id/quote-response', requireCustomer, wrap(async (req
  * ============================================================ */
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 
+// Tolerate the two most common env-var mistakes: surrounding quotes and
+// leading/trailing whitespace saved into ADMIN_PASSCODE.
+function normalizePass(v) {
+  let s = String(v == null ? '' : v).trim();
+  if (s.length >= 2 && ((s[0] === '"' && s[s.length - 1] === '"') || (s[0] === "'" && s[s.length - 1] === "'"))) {
+    s = s.slice(1, -1);
+  }
+  return s;
+}
+const EXPECTED_PASSCODE = normalizePass(ADMIN_PASSCODE);
 app.post('/api/admin/login', loginLimiter, wrap(async (req, res) => {
-  const { passcode } = req.body || {};
-  if (!passcode || String(passcode) !== String(ADMIN_PASSCODE)) {
+  const submitted = normalizePass((req.body || {}).passcode);
+  if (!submitted || submitted !== EXPECTED_PASSCODE) {
     return res.status(401).json({ error: 'bad_passcode' });
   }
   res.json({ token: signAdminToken() });
