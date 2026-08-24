@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sprue — mould request &amp; quotation portal</title>
+<title>Sprue — request &amp; quotation portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
@@ -103,7 +103,7 @@
   .fld > .lab{font-size:12.5px; font-weight:500; color:var(--ink-2); letter-spacing:.01em}
   .fld .req{color:var(--red); margin-left:2px}
   .hint{font-size:12px; color:var(--faint)}
-  input[type=text],input[type=email],input[type=tel],input[type=number],input[type=password],textarea,select{font-family:inherit; font-size:14px; color:var(--ink); background:var(--surface); border:1px solid var(--line-2); border-radius:var(--radius-sm); padding:9px 11px; width:100%; transition:border-color .13s,box-shadow .13s}
+  input:not([type]),input[type=text],input[type=email],input[type=tel],input[type=number],input[type=password],input[type=search],textarea,select{font-family:inherit; font-size:14px; color:var(--ink); background:var(--surface); border:1px solid var(--line-2); border-radius:var(--radius-sm); padding:9px 11px; width:100%; transition:border-color .13s,box-shadow .13s}
   textarea{resize:vertical; min-height:80px; line-height:1.5}
   input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
   input::placeholder,textarea::placeholder{color:var(--faint)}
@@ -198,7 +198,7 @@
 
   .detail .dh{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:4px}
   .detail .dh h2{font-size:20px}
-  .tabs{display:flex; gap:2px; border-bottom:1px solid var(--line); margin:16px 0 20px; overflow-x:auto}
+  .tabs{display:flex; gap:2px; border-bottom:1px solid var(--line); margin:16px 0 20px; overflow-x:auto; overflow-y:hidden}
   .tab{padding:9px 14px; font-size:13.5px; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; font-weight:500; white-space:nowrap}
   .tab:hover{color:var(--ink)}
   .tab.on{color:var(--accent); border-color:var(--accent)}
@@ -310,13 +310,13 @@ try{ const s=localStorage.getItem('sprue_lang'); if(s&&LOCALE[s]) L=s; }catch(e)
 function T(v){ if(v==null) return ''; if(typeof v==='string') return v; return v[L]||v.en||''; }
 
 const UI = {
-  brand_sub:{en:'mould request & quotation portal',ru:'портал заявок и расчётов',zh:'模具询价与报价门户'},
+  brand_sub:{en:'request & quotation portal',ru:'портал заявок и расчётов',zh:'询价与报价门户'},
   loading:{en:'Loading…',ru:'Загрузка…',zh:'加载中…'},
   home:{en:'Home',ru:'Главная',zh:'首页'},
   back:{en:'Back',ru:'Назад',zh:'返回'},
   // --- auth / accounts ---
   auth_welcome:{en:'Customer portal',ru:'Портал заказчика',zh:'客户门户'},
-  auth_lede:{en:'Sign in to submit mould enquiries and track your quotations and projects.',ru:'Войдите, чтобы отправлять заявки на пресс-формы и отслеживать расчёты и проекты.',zh:'登录以提交模具询价并跟踪您的报价和项目。'},
+  auth_lede:{en:'Sign in to submit your requests and track your quotations and projects.',ru:'Войдите, чтобы отправлять заявки и отслеживать расчёты и проекты.',zh:'登录以提交请求并跟踪您的报价和项目。'},
   tab_login:{en:'Sign in',ru:'Вход',zh:'登录'},
   tab_register:{en:'Create account',ru:'Регистрация',zh:'注册'},
   password:{en:'Password',ru:'Пароль',zh:'密码'},
@@ -344,8 +344,8 @@ const UI = {
   admin_page_sub:{en:'Enter the team passcode to open the admin console.',ru:'Введите пароль команды, чтобы открыть консоль.',zh:'输入团队密码以打开管理控制台。'},
   back_to_portal:{en:'Back to customer portal',ru:'К порталу заказчика',zh:'返回客户门户'},
   rfq_eyebrow:{en:'Request for quotation',ru:'Запрос на расчёт',zh:'询价请求'},
-  hero_title:{en:'Send us your mould enquiry — track it to shipment.',ru:'Отправьте заявку на пресс-форму — отслеживайте её до отгрузки.',zh:'提交您的模具需求 — 全程跟踪至发货。'},
-  hero_lede:{en:'Submit a structured request for injection tooling, moulded parts or toolroom work. Attach drawings, get a quotation, and follow every step from DFM through trial, delivery and aftersales in one place.',ru:'Оформите структурированную заявку на пресс-формы, литьевые детали или ремонт оснастки. Приложите чертежи, получите расчёт и отслеживайте каждый этап — от DFM до испытаний, поставки и обслуживания.',zh:'为注塑模具、注塑零件或模房工作提交结构化请求。上传图纸、获取报价，并在一处跟踪从 DFM 到试模、交付和售后的每一步。'},
+  hero_title:{en:'Send us your enquiry — track it to shipment.',ru:'Отправьте нам заявку — отслеживайте её до отгрузки.',zh:'提交您的需求 — 全程跟踪至发货。'},
+  hero_lede:{en:'Submit a request for quotation — injection moulds, production parts, toolroom work, or a general enquiry. Attach your files, get a quotation, and follow every step from review through production, delivery and aftersales in one place.',ru:'Оформите заявку на расчёт — пресс-формы, серийные детали, ремонт оснастки или общий запрос. Приложите файлы, получите расчёт и отслеживайте каждый этап — от рассмотрения до производства, поставки и обслуживания.',zh:'提交询价请求 — 注塑模具、量产零件、模房工作或一般咨询。上传文件、获取报价，并在一处跟踪从审核到生产、交付和售后的每一步。'},
   cust_title:{en:"I'm a customer",ru:'Я заказчик',zh:'我是客户'},
   cust_desc:{en:'Start a new request, or track an existing one with your reference number.',ru:'Создайте новую заявку или отслеживайте существующую по номеру.',zh:'创建新请求，或使用参考编号跟踪现有请求。'},
   cust_go:{en:'Submit a request',ru:'Отправить заявку',zh:'提交请求'},
