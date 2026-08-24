@@ -118,6 +118,22 @@ create or replace function respond_quote(p_id uuid, p_quote_id text, p_decision 
      where id = p_id;
 $$;
 
+-- ------------------------------------------------------------
+--  GRANTS
+--  The server connects as the "service_role". Tables created via
+--  the SQL editor do not always auto-receive these grants, which
+--  shows up as: 42501 "permission denied for table ...". Setting
+--  them explicitly here fixes and future-proofs it. Safe to re-run.
+--  (service_role bypasses RLS, so no table policies are needed.)
+-- ------------------------------------------------------------
+grant select, insert, update, delete on public.customers to service_role;
+grant select, insert, update, delete on public.requests  to service_role;
+grant usage, select on sequence request_seq to service_role;
+
+-- Tell PostgREST to reload its schema cache immediately (avoids the
+-- transient PGRST205 "could not find the table in the schema cache").
+notify pgrst, 'reload schema';
+
 -- ============================================================
 --  STORAGE
 --  The server auto-creates a PRIVATE bucket named "attachments"
