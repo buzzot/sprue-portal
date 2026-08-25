@@ -523,7 +523,6 @@ const CATEGORIES = {
     icon:I.box,
     fields:[
       {k:'project',t:'text',req:true,label:{en:'Part / project name',ru:'Название детали / проекта',zh:'零件 / 项目名称'},ph:{en:'e.g. Dashboard air vent',ru:'напр. Воздуховод панели',zh:'例如：仪表板出风口'}},
-      {k:'eau',t:'number',label:{en:'Annual volume (EAU, pcs/yr)',ru:'Годовой объём (шт/год)',zh:'年产量（件/年）'},ph:{en:'e.g. 200000',ru:'напр. 200000',zh:'例如：200000'}},
       {k:'target',t:'text',label:{en:'Target tool price (optional)',ru:'Целевая цена формы (необяз.)',zh:'目标模具价格（选填）'},ph:{en:'e.g. USD 25,000',ru:'напр. 25 000 USD',zh:'例如：USD 25,000'}},
       {k:'timeline',t:'text',label:{en:'Required delivery / timeline',ru:'Требуемый срок / график',zh:'要求交期 / 时间'},ph:{en:'e.g. T1 in 8 weeks',ru:'напр. T1 через 8 недель',zh:'例如：8周内T1'}},
     ],
@@ -536,6 +535,7 @@ const CATEGORIES = {
         {k:'material',t:'select',options:MATERIALS,label:{en:'Part material (resin)',ru:'Материал детали (полимер)',zh:'零件材料（树脂）'}},
         {k:'filler',t:'text',label:{en:'Filler / additive',ru:'Наполнитель / добавка',zh:'填料 / 添加剂'},ph:{en:'e.g. 30% glass fibre',ru:'напр. 30% стекловолокно',zh:'例如：30%玻纤'}},
         {k:'cavities',t:'number',label:{en:'Number of cavities',ru:'Число гнёзд',zh:'型腔数量'},ph:{en:'e.g. 4',ru:'напр. 4',zh:'例如：4'}},
+        {k:'eau',t:'number',label:{en:'Annual volume (EAU, pcs/yr)',ru:'Годовой объём (шт/год)',zh:'年产量（件/年）'},ph:{en:'e.g. 200000',ru:'напр. 200000',zh:'例如：200000'}},
         {k:'runner',t:'select',label:{en:'Runner type',ru:'Тип литниковой системы',zh:'流道类型'},options:[
           {v:'Cold runner',en:'Cold runner',ru:'Холодноканальная',zh:'冷流道'},
           {v:'Hot runner',en:'Hot runner',ru:'Горячеканальная',zh:'热流道'},
