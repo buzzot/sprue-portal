@@ -318,13 +318,17 @@ app.get('/api/me', requireCustomer, wrap(async (req, res) => {
 app.post('/api/uploads', requireCustomer, uploadLimiter, upload.array('files', 12), wrap(async (req, res) => {
   const out = [];
   for (const f of req.files || []) {
-    const ext = (f.originalname.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
+    // multer/busboy decodes the filename as latin1 — re-decode as UTF-8 so
+    // non-ASCII names (Cyrillic, Chinese, etc.) are preserved correctly.
+    let original = f.originalname;
+    try { original = Buffer.from(f.originalname, 'latin1').toString('utf8'); } catch (_) {}
+    const ext = (original.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
     const id = rid();
     const p = `att/${req.customer.sub}/${id}.${ext}`;
     const { error } = await supabase.storage.from(STORAGE_BUCKET)
       .upload(p, f.buffer, { contentType: f.mimetype || 'application/octet-stream', upsert: false });
     if (error) throw error;
-    out.push({ id, name: f.originalname, size: f.size, type: f.mimetype || '', path: p });
+    out.push({ id, name: original, size: f.size, type: f.mimetype || '', path: p });
   }
   res.json({ attachments: out });
 }));
