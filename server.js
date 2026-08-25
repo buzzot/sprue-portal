@@ -434,8 +434,9 @@ app.get('/api/admin/requests', requireAdmin, wrap(async (req, res) => {
 
 /* Registered customers, with a request count for each. */
 app.get('/api/admin/customers', requireAdmin, wrap(async (req, res) => {
+  // select('*') so a not-yet-migrated column (e.g. "verified") can't break the query
   const { data, error } = await supabase.from('customers')
-    .select('id,name,email,company,phone,verified,created_at')
+    .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
   const { data: reqs } = await supabase.from('requests').select('customer_id');
