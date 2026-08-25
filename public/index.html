@@ -974,7 +974,7 @@ function timelineHTML(req){
 /* ---------- Client detail ---------- */
 function vClientDetail(){
   const req=S.current; if(!req) return vDashboard();
-  return shell(`<div class="wrap narrow">
+  return shell(`<div class="wrap">
     <button class="btn ghost sm" data-go="dashboard">${I.back} ${esc(t('my_requests'))}</button>
     <div class="detail" style="margin-top:12px">
       <div class="card pad">
