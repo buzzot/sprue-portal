@@ -182,12 +182,23 @@
 
   .console{display:grid; grid-template-columns:minmax(320px,380px) 1fr; gap:20px; align-items:start}
   @media(max-width:900px){.console{grid-template-columns:1fr}}
-  .statrow{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px}
+  .statrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px}
   @media(max-width:640px){.statrow{grid-template-columns:repeat(2,1fr)}}
   .stat{padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--surface)}
   .stat .v{font-family:var(--mono); font-size:24px; font-weight:600; line-height:1}
   .stat .k{font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-top:7px}
   .stat.act .v{color:var(--amber)}
+  .stat.clickable{cursor:pointer; transition:.13s}
+  .stat.clickable:hover{border-color:var(--accent-line); background:var(--surface-2)}
+  .stat .more{font-size:11px; color:var(--accent); margin-top:5px; display:flex; align-items:center; gap:4px}
+  .stat .more svg{width:12px; height:12px}
+  table.people{border-collapse:collapse; width:100%; font-size:13px; min-width:640px}
+  table.people th,table.people td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap}
+  table.people th{background:var(--surface-2); color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.03em; position:sticky; top:0}
+  table.people td .nm{font-weight:600; color:var(--ink)}
+  table.people td .sub{color:var(--muted); font-size:12px}
+  table.people td.num{font-family:var(--mono); text-align:right}
+  .modal.wide{max-width:820px}
 
   .listtools{display:flex; gap:8px; margin-bottom:12px}
   .listtools input{flex:1}
@@ -457,6 +468,16 @@ const UI = {
   stat_action:{en:'Need your action',ru:'Требуют действий',zh:'需处理'},
   stat_awaiting:{en:'Awaiting decision',ru:'Ожидают решения',zh:'等待决定'},
   stat_inprod:{en:'In production',ru:'В производстве',zh:'生产中'},
+  stat_customers:{en:'Registered customers',ru:'Зарегистрировано клиентов',zh:'注册客户'},
+  customers_title:{en:'Registered customers',ru:'Зарегистрированные клиенты',zh:'注册客户'},
+  col_verified:{en:'Email',ru:'Email',zh:'邮箱'},
+  col_joined:{en:'Joined',ru:'Регистрация',zh:'注册时间'},
+  col_requests:{en:'Requests',ru:'Заявки',zh:'请求数'},
+  verified_yes:{en:'Verified',ru:'Подтверждён',zh:'已验证'},
+  verified_no:{en:'Unverified',ru:'Не подтверждён',zh:'未验证'},
+  no_customers:{en:'No registered customers yet.',ru:'Зарегистрированных клиентов пока нет.',zh:'暂无注册客户。'},
+  close:{en:'Close',ru:'Закрыть',zh:'关闭'},
+  view_details:{en:'View details',ru:'Подробнее',zh:'查看详情'},
   search_ph:{en:'Search ref, name, company…',ru:'Поиск по номеру, имени, компании…',zh:'搜索编号、姓名、公司…'},
   filter_all:{en:'All',ru:'Все',zh:'全部'},
   filter_action:{en:'Needs action',ru:'Требуют действий',zh:'需处理'},
@@ -1021,6 +1042,7 @@ function vAdmin(){
       <div class="stat act"><div class="v tnum">${need}</div><div class="k">${esc(t('stat_action'))}</div></div>
       <div class="stat"><div class="v tnum">${quoted}</div><div class="k">${esc(t('stat_awaiting'))}</div></div>
       <div class="stat"><div class="v tnum">${prod}</div><div class="k">${esc(t('stat_inprod'))}</div></div>
+      <div class="stat clickable" data-customers><div class="v tnum">${(S.customers||[]).length}</div><div class="k">${esc(t('stat_customers'))}</div><div class="more">${esc(t('view_details'))} ${I.arrow}</div></div>
     </div>
     <div class="console">
       <div>
@@ -1361,7 +1383,7 @@ function bindAdminLogin(app){
   const btn=$('#adminloginbtn',app); const inp=$('#adminpass',app);
   const doLogin=async()=>{
     const pass=inp.value; const err=$('#adminerr',app);
-    try{ const r=await api('/api/admin/login',{method:'POST',body:JSON.stringify({passcode:pass})}); setAdminToken(r.token); const l=await api('/api/admin/requests',{auth:'admin'}); S.list=l.requests; S.adminIn=true; render(); }
+    try{ const r=await api('/api/admin/login',{method:'POST',body:JSON.stringify({passcode:pass})}); setAdminToken(r.token); const l=await api('/api/admin/requests',{auth:'admin'}); S.list=l.requests; try{ S.customers=(await api('/api/admin/customers',{auth:'admin'})).customers; }catch(_){} S.adminIn=true; render(); }
     catch(e){ err.textContent=t('wrong_passcode'); }
   };
   if(btn) btn.addEventListener('click',doLogin);
@@ -1372,7 +1394,36 @@ function bindAdmin(app){
   const q=$('#q',app); if(q) q.addEventListener('input',()=>{ S.q=q.value; $('#reqlist',app).innerHTML=adminListHTML(); bindAdmin(app); });
   const fs=$('#fstatus',app); if(fs) fs.addEventListener('change',()=>{ S.filter=fs.value; $('#reqlist',app).innerHTML=adminListHTML(); bindAdmin(app); });
   $$('#detailpane [data-tab]',app).forEach(tb=>tb.addEventListener('click',()=>{ S.tab=tb.dataset.tab; $('#detailpane',app).innerHTML=adminDetail(S.current); bindAdmin(app); }));
+  const cb=$('[data-customers]',app); if(cb) cb.addEventListener('click',openCustomers);
   bindAdminActions(app);
+}
+async function openCustomers(){
+  try{ const r=await api('/api/admin/customers',{auth:'admin'}); S.customers=r.customers; render(); }
+  catch(e){ if(e&&e.code==='unauthorized'){ handleAdminErr(e); return; } }
+  const list=S.customers||[];
+  const rows = list.length ? list.map(c=>`
+    <tr>
+      <td><div class="nm">${esc(c.name||'')}</div>${c.company?`<div class="sub">${esc(c.company)}</div>`:''}</td>
+      <td><a href="mailto:${esc(c.email)}">${esc(c.email)}</a><div style="margin-top:3px">${c.verified?`<span class="pill green" style="padding:1px 8px"><span class="d"></span>${esc(t('verified_yes'))}</span>`:`<span class="pill neutral" style="padding:1px 8px"><span class="d"></span>${esc(t('verified_no'))}</span>`}</div></td>
+      <td>${c.phone?esc(c.phone):'<span class="muted">—</span>'}</td>
+      <td class="num">${c.requests}</td>
+      <td>${fmtDate(c.createdAt)}</td>
+    </tr>`).join('') : `<tr><td colspan="5" class="muted" style="padding:22px;text-align:center">${esc(t('no_customers'))}</td></tr>`;
+  document.getElementById('modal-root').innerHTML=`<div class="modal-bg" id="mbg"><div class="modal wide">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <h3 style="margin:0">${esc(t('customers_title'))}</h3>
+      <span class="pill neutral"><span class="d"></span>${list.length}</span>
+      <div style="flex:1"></div>
+      <button class="btn sm" id="cust_close">${esc(t('close'))}</button>
+    </div>
+    <div class="tblwrap"><table class="people">
+      <thead><tr><th>${esc(t('ov_customer'))}</th><th>${esc(t('email'))}</th><th>${esc(t('phone'))}</th><th class="num" style="text-align:right">${esc(t('col_requests'))}</th><th>${esc(t('col_joined'))}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div></div>`;
+  const close=()=>document.getElementById('modal-root').innerHTML='';
+  $('#mbg').addEventListener('click',e=>{ if(e.target.id==='mbg') close(); });
+  $('#cust_close').addEventListener('click',close);
 }
 function bindAdminActions(app){
   const on=(id,fn)=>{ const e=$('#'+id,app); if(e) e.addEventListener('click',fn); };
@@ -1419,7 +1470,7 @@ document.documentElement.lang=L;
 S.area = /\/admin\/?$/.test(location.pathname) ? 'admin' : 'customer';
 (async function boot(){
   if(S.area==='admin'){
-    if(ADMIN_TOKEN){ try{ const r=await api('/api/admin/requests',{auth:'admin'}); S.list=r.requests; S.adminIn=true; }catch(e){ clearAdminToken(); } }
+    if(ADMIN_TOKEN){ try{ const r=await api('/api/admin/requests',{auth:'admin'}); S.list=r.requests; try{ S.customers=(await api('/api/admin/customers',{auth:'admin'})).customers; }catch(_){} S.adminIn=true; }catch(e){ clearAdminToken(); } }
     render();
   } else {
     const params=new URLSearchParams(location.search);

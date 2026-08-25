@@ -432,6 +432,22 @@ app.get('/api/admin/requests', requireAdmin, wrap(async (req, res) => {
   res.json({ requests: list });
 }));
 
+/* Registered customers, with a request count for each. */
+app.get('/api/admin/customers', requireAdmin, wrap(async (req, res) => {
+  const { data, error } = await supabase.from('customers')
+    .select('id,name,email,company,phone,verified,created_at')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const { data: reqs } = await supabase.from('requests').select('customer_id');
+  const counts = {};
+  (reqs || []).forEach((r) => { if (r.customer_id) counts[r.customer_id] = (counts[r.customer_id] || 0) + 1; });
+  const customers = (data || []).map((c) => ({
+    id: c.id, name: c.name, email: c.email, company: c.company || '', phone: c.phone || '',
+    verified: !!c.verified, createdAt: new Date(c.created_at).getTime(), requests: counts[c.id] || 0,
+  }));
+  res.json({ customers });
+}));
+
 app.get('/api/admin/requests/:id', requireAdmin, wrap(async (req, res) => {
   const r = await getById(req.params.id);
   res.json({ request: await signRequest(r) });
