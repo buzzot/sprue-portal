@@ -74,8 +74,17 @@
   .rolebadge{font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 11px; display:inline-flex; align-items:center; gap:6px}
   .rolebadge .dot{width:6px; height:6px; border-radius:50%; background:var(--accent)}
   .rolebadge.admin .dot{background:var(--amber)}
-  .rolebadge .lo{cursor:pointer; margin-left:4px; color:var(--faint)}
-  .rolebadge .lo:hover{color:var(--red)}
+  .userwrap{position:relative}
+  button.rolebadge{cursor:pointer; font-family:inherit}
+  button.rolebadge:hover{border-color:var(--line-2); background:var(--surface-2)}
+  .rolebadge .caret{display:inline-flex; margin-left:1px; opacity:.55}
+  .rolebadge .caret svg{width:13px; height:13px}
+  .usermenu{position:absolute; right:0; top:calc(100% + 6px); min-width:190px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:6px; z-index:60}
+  .usermenu .um-email{font-size:12px; color:var(--muted); padding:7px 10px 8px; border-bottom:1px solid var(--line); margin-bottom:4px; word-break:break-all}
+  .um-item{display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:0; background:transparent; padding:9px 10px; border-radius:6px; font-size:13.5px; color:var(--ink); cursor:pointer; font-family:inherit}
+  .um-item:hover{background:var(--surface-2)}
+  .um-item.danger{color:var(--red)}
+  .um-item svg{width:15px; height:15px}
 
   .wrap{max-width:1160px; margin:0 auto; padding:26px 22px 80px}
   .wrap.narrow{max-width:760px}
@@ -290,6 +299,8 @@ const I = {
   box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/></svg>',
   wrench:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.9 6.9a2.12 2.12 0 01-3-3l6.9-6.9a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
   chk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+  caret:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
 };
 
 /* ============================ i18n ============================ */
@@ -720,8 +731,14 @@ function langSwitch(){
   return `<div class="langsw">`+LANGS.map(([code,lab])=>`<button data-lang="${code}" class="${L===code?'on':''}">${lab}</button>`).join('')+`</div>`;
 }
 function roleBadge(){
-  if(S.area==='admin' && S.adminIn) return `<span class="rolebadge admin"><span class="dot"></span>${esc(t('admin_badge'))}<span class="lo" data-logout-admin title="${esc(t('logout'))}">${I.x}</span></span>`;
-  if(S.area==='customer' && S.me) return `<span class="rolebadge"><span class="dot"></span>${esc(S.me.name)}<span class="lo" data-logout-cust title="${esc(t('logout'))}">${I.x}</span></span>`;
+  if(S.area==='admin' && S.adminIn) return `<div class="userwrap">
+    <button class="rolebadge admin" data-usermenu><span class="dot"></span>${esc(t('admin_badge'))} <span class="caret">${I.caret}</span></button>
+    <div class="usermenu" id="usermenu" hidden><button class="um-item danger" data-logout-admin>${I.logout} ${esc(t('logout'))}</button></div>
+  </div>`;
+  if(S.area==='customer' && S.me) return `<div class="userwrap">
+    <button class="rolebadge" data-usermenu><span class="dot"></span>${esc(S.me.name)} <span class="caret">${I.caret}</span></button>
+    <div class="usermenu" id="usermenu" hidden><div class="um-email">${esc(S.me.email)}</div><button class="um-item danger" data-logout-cust>${I.logout} ${esc(t('logout'))}</button></div>
+  </div>`;
   return '';
 }
 function shell(inner){
@@ -1122,6 +1139,8 @@ function render(){
 function bindGlobal(){
   $$('[data-lang]').forEach(b=>b.addEventListener('click',()=>{ L=b.dataset.lang; try{localStorage.setItem('sprue_lang',L);}catch(e){} document.documentElement.lang=L; render(); }));
   const home=$('[data-home]'); if(home) home.addEventListener('click',handleHome);
+  const um=$('[data-usermenu]'), menu=$('#usermenu');
+  if(um&&menu){ um.addEventListener('click',(e)=>{ e.stopPropagation(); const opening=menu.hidden; menu.hidden=!opening; if(opening){ setTimeout(()=>{ const close=()=>{ menu.hidden=true; document.removeEventListener('click',close); }; document.addEventListener('click',close); },0); } }); }
   const loc=$('[data-logout-cust]'); if(loc) loc.addEventListener('click',(e)=>{ e.stopPropagation(); clearCustToken(); S.me=null; S.list=[]; S.view='auth'; render(); });
   const loa=$('[data-logout-admin]'); if(loa) loa.addEventListener('click',(e)=>{ e.stopPropagation(); clearAdminToken(); S.adminIn=false; render(); });
   $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
