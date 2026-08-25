@@ -5,6 +5,7 @@
 require('dotenv').config();
 
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -163,13 +164,15 @@ app.post('/api/auth/register', authLimiter, wrap(async (req, res) => {
 
   const password_hash = await bcrypt.hash(password, 10);
   const { data, error } = await supabase.from('customers')
-    .insert({ email, password_hash, name, company: String(b.company || '').slice(0, 200), phone: String(b.phone || '').slice(0, 60) })
+    .insert({ email, password_hash, name, company: String(b.company || '').slice(0, 200), phone: String(b.phone || '').slice(0, 60), verified: false })
     .select('*').single();
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return res.status(409).json({ error: 'email_taken' });
     throw error;
   }
-  res.json({ token: signCustomerToken(data), customer: publicProfile(data) });
+  try { await issueVerification(data, req); } catch (_) { /* logged */ }
+  // No login token yet — the account must confirm their email first.
+  res.json({ ok: true, pending_verification: true, email: data.email });
 }));
 
 app.post('/api/auth/login', authLimiter, wrap(async (req, res) => {
@@ -183,6 +186,121 @@ app.post('/api/auth/login', authLimiter, wrap(async (req, res) => {
     try { ok = await bcrypt.compare(password, c.password_hash); } catch (_) { ok = false; }
   }
   if (!ok) return res.status(401).json({ error: 'bad_credentials' });
+  if (!c.verified) return res.status(403).json({ error: 'not_verified', email: c.email });
+  res.json({ token: signCustomerToken(c), customer: publicProfile(c) });
+}));
+
+/* ---------- Email (Resend) ---------- */
+async function emailSend(to, subject, html) {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM || 'Sprue <onboarding@resend.dev>';
+  if (!key) { console.warn('[email] RESEND_API_KEY not set —', subject, 'for', to, '\n', html.match(/https?:\/\/\S+?(?=["<])/) ? html.match(/https?:\/\/\S+?(?=["<])/)[0] : ''); return; }
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to, subject, html }),
+  });
+  if (!r.ok) { console.error('[email] Resend send failed', r.status, await r.text().catch(() => '')); throw new Error('email_failed'); }
+}
+function emailHtml(name, intro, button, link, footer) {
+  const safe = name ? String(name).replace(/[<>&]/g, '') : 'there';
+  return `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:auto;color:#0F1720">
+      <p style="font-size:15px">Hi ${safe},</p>
+      <p style="font-size:15px;line-height:1.5">${intro}</p>
+      <p style="text-align:center;margin:28px 0">
+        <a href="${link}" style="background:#1E5F8C;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-size:15px;font-weight:600;display:inline-block">${button}</a>
+      </p>
+      <p style="font-size:13px;color:#6C7A8A;line-height:1.5">If the button doesn't work, copy this link into your browser:<br><a href="${link}" style="color:#1E5F8C;word-break:break-all">${link}</a></p>
+      <p style="font-size:13px;color:#6C7A8A">${footer}</p>
+    </div>`;
+}
+const appBase = (req) => (process.env.APP_URL || (req.protocol + '://' + req.get('host'))).replace(/\/+$/, '');
+
+async function issueVerification(c, req) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const verify_hash = crypto.createHash('sha256').update(token).digest('hex');
+  const verify_expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from('customers').update({ verify_hash, verify_expires }).eq('id', c.id);
+  const link = `${appBase(req)}/verify?token=${token}&email=${encodeURIComponent(c.email)}`;
+  await emailSend(c.email, 'Confirm your Sprue account',
+    emailHtml(c.name, 'Thanks for registering. Please confirm your email address to activate your account. This link expires in 24 hours.',
+      'Confirm my email', link, "If you didn't create this account, you can ignore this email."));
+}
+
+/* Resend the verification email (always responds ok). */
+app.post('/api/auth/resend-verification', authLimiter, wrap(async (req, res) => {
+  const email = String((req.body || {}).email || '').trim().toLowerCase();
+  if (emailRe.test(email)) {
+    const { data } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+    const c = data && data[0];
+    if (c && !c.verified) { try { await issueVerification(c, req); } catch (_) {} }
+  }
+  res.json({ ok: true });
+}));
+
+/* Confirm the email: verify token, mark verified, sign the customer in. */
+app.post('/api/auth/verify', authLimiter, wrap(async (req, res) => {
+  const email = String((req.body || {}).email || '').trim().toLowerCase();
+  const token = String((req.body || {}).token || '');
+  if (!token) return res.status(400).json({ error: 'verify_invalid' });
+  const { data } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+  const c = data && data[0];
+  if (c && c.verified) return res.json({ token: signCustomerToken(c), customer: publicProfile(c), already: true });
+  if (!c || !c.verify_hash || !c.verify_expires || new Date(c.verify_expires).getTime() < Date.now()) {
+    return res.status(400).json({ error: 'verify_invalid' });
+  }
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const a = Buffer.from(hash); const bb = Buffer.from(String(c.verify_hash));
+  if (a.length !== bb.length || !crypto.timingSafeEqual(a, bb)) return res.status(400).json({ error: 'verify_invalid' });
+  await supabase.from('customers').update({ verified: true, verify_hash: null, verify_expires: null }).eq('id', c.id);
+  res.json({ token: signCustomerToken(c), customer: publicProfile(c) });
+}));
+
+/* Request a reset link. Always responds ok (never reveals whether the email exists). */
+app.post('/api/auth/forgot', authLimiter, wrap(async (req, res) => {
+  const email = String((req.body || {}).email || '').trim().toLowerCase();
+  if (emailRe.test(email)) {
+    const { data } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+    const c = data && data[0];
+    if (c) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const reset_hash = crypto.createHash('sha256').update(token).digest('hex');
+      const reset_expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await supabase.from('customers').update({ reset_hash, reset_expires }).eq('id', c.id);
+      const link = `${appBase(req)}/reset?token=${token}&email=${encodeURIComponent(c.email)}`;
+      try {
+        await emailSend(c.email, 'Reset your Sprue password',
+          emailHtml(c.name, 'We received a request to reset your password. Click below to choose a new one. This link expires in 1 hour.',
+            'Reset password', link, "If you didn't request this, ignore this email — your password won't change."));
+      } catch (_) { /* logged; don't reveal to caller */ }
+    }
+  }
+  res.json({ ok: true });
+}));
+
+/* Complete the reset: verify token, set new password, sign the customer in. */
+app.post('/api/auth/reset', authLimiter, wrap(async (req, res) => {
+  const b = req.body || {};
+  const email = String(b.email || '').trim().toLowerCase();
+  const token = String(b.token || '');
+  const password = String(b.password || '');
+  if (password.length < 6) return res.status(400).json({ error: 'weak_password' });
+  if (!token) return res.status(400).json({ error: 'reset_invalid' });
+  const { data } = await supabase.from('customers').select('*').ilike('email', email).limit(1);
+  const c = data && data[0];
+  if (!c || !c.reset_hash || !c.reset_expires || new Date(c.reset_expires).getTime() < Date.now()) {
+    return res.status(400).json({ error: 'reset_invalid' });
+  }
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const a = Buffer.from(hash);
+  const bb = Buffer.from(String(c.reset_hash));
+  if (a.length !== bb.length || !crypto.timingSafeEqual(a, bb)) {
+    return res.status(400).json({ error: 'reset_invalid' });
+  }
+  const password_hash = await bcrypt.hash(password, 10);
+  // completing a reset also proves email ownership → mark verified
+  await supabase.from('customers').update({ password_hash, verified: true, reset_hash: null, reset_expires: null }).eq('id', c.id);
   res.json({ token: signCustomerToken(c), customer: publicProfile(c) });
 }));
 

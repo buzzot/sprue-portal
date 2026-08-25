@@ -332,6 +332,33 @@ const UI = {
   err_name_required:{en:'Please enter your name.',ru:'Укажите ваше имя.',zh:'请输入您的姓名。'},
   err_rate_limited:{en:'Too many attempts — please wait a minute and try again.',ru:'Слишком много попыток — подождите минуту и попробуйте снова.',zh:'尝试次数过多 — 请稍等一分钟后重试。'},
   err_server:{en:'Server error — please try again in a moment.',ru:'Ошибка сервера — попробуйте через минуту.',zh:'服务器错误 — 请稍后重试。'},
+  // --- email verification ---
+  verify_sent_title:{en:'Confirm your email',ru:'Подтвердите email',zh:'确认您的邮箱'},
+  verify_sent_pre:{en:"We've sent a confirmation link to",ru:'Мы отправили ссылку для подтверждения на',zh:'我们已向以下邮箱发送确认链接：'},
+  verify_sent_post:{en:'Open it to activate your account, then sign in. The link expires in 24 hours.',ru:'Перейдите по ней, чтобы активировать аккаунт, затем войдите. Ссылка действует 24 часа.',zh:'请打开链接激活账户，然后登录。链接24小时内有效。'},
+  resend_email:{en:'Resend email',ru:'Отправить снова',zh:'重新发送'},
+  resent:{en:'Email sent again — check your inbox.',ru:'Письмо отправлено повторно — проверьте почту.',zh:'邮件已重新发送 — 请查收。'},
+  go_signin:{en:'Go to sign in',ru:'Перейти ко входу',zh:'前往登录'},
+  verifying:{en:'Confirming your email…',ru:'Подтверждаем email…',zh:'正在确认邮箱…'},
+  verify_ok_title:{en:'Email confirmed',ru:'Email подтверждён',zh:'邮箱已确认'},
+  verify_ok_sub:{en:'Your account is active. Taking you to your dashboard…',ru:'Аккаунт активирован. Открываем панель…',zh:'账户已激活，正在进入您的面板…'},
+  err_verify_invalid:{en:'This confirmation link is invalid or has expired.',ru:'Ссылка подтверждения недействительна или устарела.',zh:'此确认链接无效或已过期。'},
+  not_verified_msg:{en:'Please confirm your email first — we just sent you the link.',ru:'Сначала подтвердите email — мы отправили ссылку.',zh:'请先确认您的邮箱 — 我们刚刚发送了链接。'},
+  // --- password reset ---
+  forgot_link:{en:'Forgot password?',ru:'Забыли пароль?',zh:'忘记密码？'},
+  forgot_head:{en:'Reset your password',ru:'Сброс пароля',zh:'重置密码'},
+  forgot_sub:{en:"Enter your account email and we'll send you a reset link.",ru:'Укажите email аккаунта — мы отправим ссылку для сброса.',zh:'输入您的账户邮箱，我们将发送重置链接。'},
+  send_reset:{en:'Send reset link',ru:'Отправить ссылку',zh:'发送重置链接'},
+  forgot_sent_title:{en:'Check your email',ru:'Проверьте почту',zh:'请查收邮件'},
+  forgot_sent:{en:'If an account exists for that email, a reset link is on its way.',ru:'Если аккаунт с таким email существует, ссылка для сброса уже отправлена.',zh:'如果该邮箱已注册，重置链接即将送达。'},
+  reset_head:{en:'Set a new password',ru:'Новый пароль',zh:'设置新密码'},
+  reset_sub:{en:'Choose a new password for your account.',ru:'Выберите новый пароль для аккаунта.',zh:'为您的账户设置新密码。'},
+  new_password:{en:'New password',ru:'Новый пароль',zh:'新密码'},
+  confirm_password:{en:'Confirm password',ru:'Повторите пароль',zh:'确认密码'},
+  reset_btn:{en:'Update password',ru:'Обновить пароль',zh:'更新密码'},
+  err_passwords_match:{en:"Passwords don't match.",ru:'Пароли не совпадают.',zh:'两次输入的密码不一致。'},
+  err_reset_invalid:{en:'This reset link is invalid or has expired.',ru:'Ссылка для сброса недействительна или устарела.',zh:'此重置链接无效或已过期。'},
+  back_signin:{en:'Back to sign in',ru:'Вернуться к входу',zh:'返回登录'},
   logout:{en:'Sign out',ru:'Выйти',zh:'退出'},
   // --- dashboard ---
   greeting:{en:'Welcome',ru:'Здравствуйте',zh:'欢迎'},
@@ -730,6 +757,7 @@ function vAuth(){
           <label class="fld"><span class="lab">${esc(t('phone'))}</span><input id="a_phone" type="tel" placeholder="${esc(t('optional'))}"></label>`}
         <label class="fld"><span class="lab">${esc(t('email'))} <span class="req">*</span></span><input id="a_email" type="email" placeholder="${esc(t('ph_email'))}"></label>
         <label class="fld"><span class="lab">${esc(t('password'))} <span class="req">*</span></span><input id="a_pass" type="password" placeholder="${esc(isLogin?t('password'):t('password_ph'))}"></label>
+        ${isLogin?`<div style="text-align:right;margin-top:-4px"><a href="#" data-go="forgot" class="hint" style="color:var(--accent)">${esc(t('forgot_link'))}</a></div>`:''}
         <div id="autherr" class="hint" style="color:var(--red)"></div>
         <button class="btn primary" id="authbtn">${esc(isLogin?t('login_btn'):t('register_btn'))} ${I.arrow}</button>
       </form>
@@ -1081,6 +1109,10 @@ function render(){
       case 'dashboard': html=vDashboard(); break;
       case 'new': html=vClientForm(); break;
       case 'detail': html=vClientDetail(); break;
+      case 'verify_pending': html=vVerifyPending(); break;
+      case 'verify': html=vVerify(); break;
+      case 'forgot': html=vForgot(); break;
+      case 'reset': html=vReset(); break;
       default: html=vAuth();
     }
   }
@@ -1101,6 +1133,8 @@ function handleHome(){
 }
 function go(v){
   if(v==='new'){ if(!S.draft) S.draft=newDraft(); }
+  if(v==='auth'){ S.authTab='login'; S.forgotSent=false; S.verifyFailed=false; }
+  if(v==='forgot'){ S.forgotSent=false; }
   S.view=v; render();
   if(v==='dashboard') refreshDashboard();
 }
@@ -1115,6 +1149,9 @@ function bindView(){
   if(S.view==='dashboard') $$('[data-open]',app).forEach(c=>c.addEventListener('click',()=>openMyRequest(c.dataset.open)));
   if(S.view==='new') mountClientForm(app);
   if(S.view==='detail') bindClientDetail(app);
+  if(S.view==='verify_pending' || S.view==='verify'){ const rb=$('[data-resend]',app); if(rb) rb.addEventListener('click',doResend); }
+  if(S.view==='forgot'){ const b=$('#fgbtn',app); if(b) b.addEventListener('click',doForgot); const e=$('#fg_email',app); if(e) e.addEventListener('keydown',ev=>{if(ev.key==='Enter')doForgot();}); }
+  if(S.view==='reset'){ const b=$('#rsbtn',app); if(b) b.addEventListener('click',doReset); const e=$('#rs_pass2',app); if(e) e.addEventListener('keydown',ev=>{if(ev.key==='Enter')doReset();}); }
 }
 
 /* ---------- Customer auth ---------- */
@@ -1139,12 +1176,17 @@ async function doAuth(){
   btn.disabled=true;
   try{
     const r=await api('/api/auth/'+(isLogin?'login':'register'),{method:'POST',body:JSON.stringify(payload)});
+    if(!isLogin || r.pending_verification){
+      // new registration → must confirm email before signing in
+      S.pendingEmail = r.email || email; S.view='verify_pending'; render(); return;
+    }
     setCustToken(r.token);
     const me=await api('/api/me',{auth:'customer'});
     S.me=me.customer; S.list=me.requests; S.view='dashboard'; render();
   }catch(e){
     btn.disabled=false;
     const code=e&&e.error;
+    if(code==='not_verified'){ S.pendingEmail=(e&&e.email)||email; S.view='verify_pending'; render(); return; }
     if(code==='bad_credentials') err.textContent=t('err_bad_credentials');
     else if(code==='email_taken') err.textContent=t('err_email_taken');
     else if(code==='weak_password') err.textContent=t('err_weak_password');
@@ -1152,6 +1194,118 @@ async function doAuth(){
     else if(code==='name_required') err.textContent=t('err_name_required');
     else if(code==='rate_limited') err.textContent=t('err_rate_limited');
     else if(code==='server_error') err.textContent=t('err_server');
+    else err.textContent=t('network_error');
+  }
+}
+async function doResend(){
+  try{ await api('/api/auth/resend-verification',{method:'POST',body:JSON.stringify({email:S.pendingEmail})}); toast(t('resent')); }
+  catch(e){ toast(t('network_error')); }
+}
+/* ---------- Verify-pending (after register / unverified login) ---------- */
+function vVerifyPending(){
+  return shell(`<div class="wrap narrow" style="max-width:460px">
+    <div class="card pad stack" style="align-items:center;text-align:center;padding:38px 26px;margin-top:24px">
+      <div class="ic" style="width:48px;height:48px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center">${I.send}</div>
+      <h2 style="font-size:21px">${esc(t('verify_sent_title'))}</h2>
+      <p class="muted" style="max-width:44ch">${esc(t('verify_sent_pre'))} <b style="color:var(--ink)">${esc(S.pendingEmail||'')}</b>. ${esc(t('verify_sent_post'))}</p>
+      <div class="btnrow" style="justify-content:center">
+        <button class="btn" data-resend>${esc(t('resend_email'))}</button>
+        <button class="btn primary" data-go="auth">${esc(t('go_signin'))}</button>
+      </div>
+    </div>
+  </div>`);
+}
+/* ---------- Verify (from email link /verify?token=..) ---------- */
+function vVerify(){
+  const failed=S.verifyFailed;
+  return shell(`<div class="wrap narrow" style="max-width:460px">
+    <div class="card pad stack" style="align-items:center;text-align:center;padding:38px 26px;margin-top:24px">
+      ${failed?`
+        <div class="ic" style="width:48px;height:48px;border-radius:12px;background:var(--red-soft);color:var(--red);display:grid;place-items:center">${I.info}</div>
+        <h2 style="font-size:21px">${esc(t('verify_sent_title'))}</h2>
+        <p style="color:var(--red);max-width:44ch">${esc(t('err_verify_invalid'))}</p>
+        <div class="btnrow" style="justify-content:center">
+          <button class="btn" data-resend>${esc(t('resend_email'))}</button>
+          <button class="btn primary" data-go="auth">${esc(t('go_signin'))}</button>
+        </div>`
+      :`<div class="ic" style="width:48px;height:48px;border-radius:12px;background:var(--green-soft);color:var(--green);display:grid;place-items:center">${I.chk}</div>
+        <h2 style="font-size:21px">${esc(t('verify_ok_title'))}</h2>
+        <p class="muted">${esc(t('verifying'))}</p><div><span class="spin"></span></div>`}
+    </div>
+  </div>`);
+}
+async function doVerify(){
+  try{
+    const r=await api('/api/auth/verify',{method:'POST',body:JSON.stringify({email:S.verifyEmail,token:S.verifyToken})});
+    setCustToken(r.token);
+    try{ history.replaceState(null,'','/'); }catch(e){}
+    const me=await api('/api/me',{auth:'customer'});
+    S.me=me.customer; S.list=me.requests; S.view='dashboard'; render();
+  }catch(e){
+    S.pendingEmail=S.verifyEmail; S.verifyFailed=true; render();
+  }
+}
+/* ---------- Forgot password ---------- */
+function vForgot(){
+  if(S.forgotSent){
+    return shell(`<div class="wrap narrow" style="max-width:460px">
+      <div class="card pad stack" style="align-items:center;text-align:center;padding:38px 26px;margin-top:24px">
+        <div class="ic" style="width:48px;height:48px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center">${I.send}</div>
+        <h2 style="font-size:21px">${esc(t('forgot_sent_title'))}</h2>
+        <p class="muted" style="max-width:44ch">${esc(t('forgot_sent'))}</p>
+        <button class="btn primary" data-go="auth">${esc(t('back_signin'))}</button>
+      </div>
+    </div>`);
+  }
+  return shell(`<div class="wrap narrow" style="max-width:460px">
+    <div class="card pad stack" style="margin-top:24px">
+      <div class="sechead"><h2>${esc(t('forgot_head'))}</h2></div>
+      <div class="secsub" style="margin:0">${esc(t('forgot_sub'))}</div>
+      <label class="fld"><span class="lab">${esc(t('email'))}</span><input id="fg_email" type="email" placeholder="${esc(t('ph_email'))}"></label>
+      <div id="fgerr" class="hint" style="color:var(--red)"></div>
+      <button class="btn primary" id="fgbtn">${esc(t('send_reset'))} ${I.arrow}</button>
+      <div class="toolnote" style="justify-content:center;margin-top:2px"><a href="#" data-go="auth">${esc(t('back_signin'))}</a></div>
+    </div>
+  </div>`);
+}
+async function doForgot(){
+  const email=($('#fg_email').value||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('#fgerr').textContent=t('err_bad_email'); return; }
+  const btn=$('#fgbtn'); btn.disabled=true;
+  try{ await api('/api/auth/forgot',{method:'POST',body:JSON.stringify({email})}); S.forgotSent=true; render(); }
+  catch(e){ btn.disabled=false; const c=e&&e.error; $('#fgerr').textContent = c==='rate_limited'?t('err_rate_limited'):t('network_error'); }
+}
+/* ---------- Reset password (from email link /reset?token=..) ---------- */
+function vReset(){
+  return shell(`<div class="wrap narrow" style="max-width:460px">
+    <div class="card pad stack" style="margin-top:24px">
+      <div class="sechead"><h2>${esc(t('reset_head'))}</h2></div>
+      <div class="secsub" style="margin:0">${esc(t('reset_sub'))}</div>
+      <label class="fld"><span class="lab">${esc(t('new_password'))}</span><input id="rs_pass" type="password" placeholder="${esc(t('password_ph'))}"></label>
+      <label class="fld"><span class="lab">${esc(t('confirm_password'))}</span><input id="rs_pass2" type="password"></label>
+      <div id="rserr" class="hint" style="color:var(--red)"></div>
+      <button class="btn primary" id="rsbtn">${esc(t('reset_btn'))} ${I.arrow}</button>
+      <div class="toolnote" style="justify-content:center;margin-top:2px"><a href="#" data-go="auth">${esc(t('back_signin'))}</a></div>
+    </div>
+  </div>`);
+}
+async function doReset(){
+  const p1=$('#rs_pass').value||'', p2=$('#rs_pass2').value||'';
+  const err=$('#rserr');
+  if(p1.length<6){ err.textContent=t('err_weak_password'); return; }
+  if(p1!==p2){ err.textContent=t('err_passwords_match'); return; }
+  const btn=$('#rsbtn'); btn.disabled=true;
+  try{
+    const r=await api('/api/auth/reset',{method:'POST',body:JSON.stringify({email:S.resetEmail,token:S.resetToken,password:p1})});
+    setCustToken(r.token);
+    try{ history.replaceState(null,'','/'); }catch(e){}
+    const me=await api('/api/me',{auth:'customer'});
+    S.me=me.customer; S.list=me.requests; S.view='dashboard'; render();
+  }catch(e){
+    btn.disabled=false; const c=e&&e.error;
+    if(c==='reset_invalid') err.textContent=t('err_reset_invalid');
+    else if(c==='weak_password') err.textContent=t('err_weak_password');
+    else if(c==='rate_limited') err.textContent=t('err_rate_limited');
     else err.textContent=t('network_error');
   }
 }
@@ -1249,6 +1403,10 @@ S.area = /\/admin\/?$/.test(location.pathname) ? 'admin' : 'customer';
     if(ADMIN_TOKEN){ try{ const r=await api('/api/admin/requests',{auth:'admin'}); S.list=r.requests; S.adminIn=true; }catch(e){ clearAdminToken(); } }
     render();
   } else {
+    const params=new URLSearchParams(location.search);
+    const tok=params.get('token'), pem=params.get('email')||'';
+    if(/\/reset\/?$/.test(location.pathname) && tok){ S.resetToken=tok; S.resetEmail=pem; S.view='reset'; render(); return; }
+    if(/\/verify\/?$/.test(location.pathname) && tok){ S.verifyToken=tok; S.verifyEmail=pem; S.view='verify'; render(); doVerify(); return; }
     if(CUST_TOKEN){ try{ const r=await api('/api/me',{auth:'customer'}); S.me=r.customer; S.list=r.requests; S.view='dashboard'; }catch(e){ clearCustToken(); S.view='auth'; } }
     render();
   }

@@ -105,13 +105,42 @@ npm start                 # http://localhost:3000
 
 ## How it works
 
-- **Customers** open the portal, pick their language (auto‑detected, switchable top‑right),
-  and either submit a new request or track an existing one with their **reference number +
-  email**. That pair is the private key to a request — a customer can only see their own.
-- **Your team** clicks *Team access*, enters the shared passcode, and gets the admin
+- **Customers** open the portal (the main page) and **register or sign in** with an email
+  and password. Once signed in they land on **their dashboard** — a list of their own
+  requests — where they submit new enquiries (contact details come from their account),
+  open any request to see its status, message the team, and accept or decline quotations.
+  A customer only ever sees their own requests.
+- **Your team** goes to a **separate URL — `/admin`** (e.g.
+  `https://inquiry.highsb.com/admin`), enters the shared passcode, and gets the admin
   console: filter the pipeline, open a request, read the questionnaire and per‑mould table,
   post messages (or internal‑only notes), send quotations, classify, and advance status
-  through the lifecycle. Every action is logged to the request's timeline.
+  through the lifecycle. Every action is logged to the request's timeline. The admin sign‑in
+  is not linked from the customer portal — reach it directly by its URL.
+
+### Email (verification + password reset)
+
+New customers must **confirm their email** before they can sign in, and can **reset a
+forgotten password** by email. Both send a link via [Resend](https://resend.com):
+
+1. Create a free Resend account, add an **API key**, and **verify a sender domain**
+   (e.g. `highsb.com`) so mail can be sent from `noreply@inquiry.highsb.com`.
+2. Set these Railway variables:
+   - `RESEND_API_KEY` — your Resend key
+   - `EMAIL_FROM` — e.g. `Sprue <noreply@inquiry.highsb.com>`
+   - `APP_URL` — `https://inquiry.highsb.com` (used to build links inside the emails)
+3. Re-run `schema.sql` (adds the `verified` / token columns). Existing accounts created
+   before this feature will be unverified — mark them verified once with:
+   `update customers set verified = true;`
+
+Until `RESEND_API_KEY` is set, the server logs the verification/reset link to the deploy
+logs instead of emailing (useful for testing).
+
+### Updating an existing deployment
+
+If you already ran the first version of `schema.sql`, just **re‑run the whole
+`schema.sql`** in the Supabase SQL Editor — it's idempotent and only adds the new
+`customers` table and the `customer_id` column. No new environment variables are needed.
+Then push the new code and Railway redeploys.
 - **Files** are uploaded to the private Supabase Storage bucket and served to customers and
   admins through short‑lived signed URLs (1 hour), so the bucket itself stays private.
 

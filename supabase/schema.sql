@@ -29,6 +29,13 @@ create table if not exists customers (
 create unique index if not exists customers_email_uidx on customers(lower(email));
 alter table customers enable row level security;
 
+-- Email verification + password reset (added later; safe to re-run)
+alter table customers add column if not exists verified      boolean not null default false;
+alter table customers add column if not exists verify_hash    text;
+alter table customers add column if not exists verify_expires timestamptz;
+alter table customers add column if not exists reset_hash     text;
+alter table customers add column if not exists reset_expires  timestamptz;
+
 -- ------------------------------------------------------------
 --  Main table. Sub-collections (events/quotes) are jsonb so the
 --  app model maps 1:1; all mutations go through the atomic
